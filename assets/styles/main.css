@@ -100,6 +100,11 @@ header nav li:first-child a {
 	padding: 1em 0;
 }
 
+.main ul {
+	padding: 1em;
+	list-style: disc;
+}
+
 .main ul li {
 	padding-bottom: 0.3em;
 }

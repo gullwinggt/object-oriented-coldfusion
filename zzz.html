@@ -1,8 +1,9 @@
+
 <!DOCTYPE html>
 <html>
 <head>
 	
-	<title>What is an Object?</title>
+	<title>Component Basics</title>
 	
 	<link rel="stylesheet" href="assets/styles/reset.css">
 	<link rel="stylesheet" href="assets/styles/main.css">
@@ -29,129 +30,294 @@
 </header>
 
 <div class="main">
-	<h1>What is an Object?</h1>
+	<h1>Component Basics</h1>
 
 <p>
-	In object oriented programming, an object represents a bundling of data and functions that use the data.
+	ColdFusion Components, or CFCs, are the starting point for building object oriented systems
+	so it is important to understand what they are and how they differ from objects.
+</p>
+
+<h2>What is a component?</h2>
+
+<p>
+	A component is simply a text file that describes a set of variables and functions 
+	which are used as a &quot;blueprint&quot; or &quot;template&quot; for creating objects. 
+	Once you have created a component then you can use the createObject() function to create objects based on your component. 
+</p>
+
+<h2>Component file names</h2>
+
+<p>
+	All components file names must end with &quot;.cfc&quot;.
 </p>
 
 <p>
-	This is simply a description of the structure of an object, but we need to think about objects as much more 
-	than this simple bundling. We can think of objects as though they were very little living entities; 
-	they have a lifespan, they can do things, and they can communicate with each other.
+	It is common practice that component filenames use <a href="http://c2.com/cgi/wiki?UpperCamelCase">upper camel case</a>. 
+	The same naming convention is used when providing the component's name as a parameter to createObject().
 </p>
 
 <p>
-	<img src="assets/images/object-life-work-comm.gif" alt="The life and times of objects">
+	Example file names:
 </p>
 
-<h2>Objects have a lifetime</h2>
+<ul>
+<li>User.cfc</li>
+<li>ShoppingCart.cfc</li>
+<li>ProductFinder.cfc</li>
+</ul>
 
 <p>
-	Some objects may have a very short lifespan and perhaps only exist for the duration 
-	of a single page request. Other objects may live much longer and may exist throughout 
-	the lifetime of your application.
+	Examples of creating these objects:
 </p>
+
+<ul>
+<li>&lt;cfset user = createObject(&quot;component&quot;,&quot;User&quot;)&gt;</li>
+<li>&lt;cfset shoppingCart = createObject(&quot;component&quot;,&quot;ShoppingCart&quot;)&gt;</li>
+<li>&lt;cfset productFinder = createObject(&quot;component&quot;,&quot;ProductFinder&quot;)&gt;</li>
+</ul>
+
+<h2>Component structure</h2>
 
 <p>
-	Objects that have a short lifespan are those that you create on the fly during a page request. 
-	You might use it a few times during that page request but it is discarded when the page request finishes. 
-	Objects that have a longer lifespan are those you create and store in the session or application scope. 
-	These survive for as long as session or as long as the application is running.
+	Let's take a look at a simple component called ThresholdCounter.cfc so we can review its structure 
+	and take a look at some common best practices. No need to worry about what this component is doing 
+	at the moment, we will look at that later. For now let's focus on it's structure.
 </p>
+
+<div class="highlight"><pre><code class="cfm"><span class="nb">&lt;cfcomponent</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
+
+    <span class="cm">&lt;!--- PRIVATE VARIABLES ---&gt;</span>
+
+    <span class="nb">&lt;cfset</span> <span class="nv">variables.threshold</span> <span class="o">=</span> <span class="m">100</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfset</span> <span class="nv">variables.currentTotal</span> <span class="o">=</span> <span class="m">0</span><span class="nb">&gt;</span>
+
+    <span class="cm">&lt;!--- PUBLIC FUNCTIONS ---&gt;</span>
+
+    <span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;addAmount&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfargument</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;amount&quot;</span> <span class="nv">type</span><span class="o">=</span><span class="s2">&quot;numeric&quot;</span> <span class="nv">required</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfset</span> <span class="nv">variables.currentTotal</span> <span class="o">=</span> <span class="nv">variables.currentTotal</span> <span class="o">+</span> <span class="nv">arguments.amount</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;/cffunction&gt;</span>
+
+    <span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;thresholdHasBeenReached&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span> <span class="nv">returntype</span><span class="o">=</span><span class="s2">&quot;boolean&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfset</span> <span class="k">var</span> <span class="nv">thresholdReached</span> <span class="o">=</span> <span class="nv">variables.currentTotal</span> <span class="nv">ge</span> <span class="nv">variables.threshold</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfreturn</span> <span class="nv">thresholdReached</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;/cffunction&gt;</span>
+
+<span class="nb">&lt;/cfcomponent&gt;</span>
+</code></pre>
+</div>
+
+
+<h3>Suppress whitespace output</h3>
 
 <p>
-	In ColdFusion code this is most easily done using the createObject() function. createObject() 
-	returns a reference to an object so we can keep it around for a while.
+	Notice that the &lt;cfcomponent&gt; tag and the &lt;cffunction&gt; tags both have output=&quot;false&quot;. 
+	Always put these on every component and function that you create. 
+	This prevents <a href="http://en.wikipedia.org/wiki/White_space">whitespace</a> 
+	being unintentionally sent to the browser. As a general rule, your components should never send output directly to the browser. 
 </p>
 
-<div class="highlight"><pre><code class="cfm"><span class="nb">&lt;cfset</span> <span class="nv">application.importantObject</span> <span class="o">=</span> <span class="nf">createObject</span><span class="p">(</span><span class="s2">&quot;component&quot;</span><span class="p">,</span><span class="s2">&quot;ImportantApplicationObject&quot;</span><span class="p">).</span><span class="nf">init</span><span class="p">()</span><span class="nb">&gt;</span>
+<h3>Use the variables scope to keep your data private</h3>
+
+<p>
+	Our two data values are places in the &quot;variables&quot; scope. 
+</p>
+
+<div class="highlight"><pre><code class="cfm"><span class="nb">&lt;cfset</span> <span class="nv">variables.maxThreshold</span> <span class="o">=</span> <span class="m">100</span><span class="nb">&gt;</span>
+<span class="nb">&lt;cfset</span> <span class="nv">variables.currentTotal</span> <span class="o">=</span> <span class="m">0</span><span class="nb">&gt;</span>
 </code></pre>
 </div>
 
 
 <p>
-	Because objects have a lifetime, this also means that they maintain state. 
-	The variables inside them can, and typically will, change during their lifetime. 
-	A simple example might be an application object that counts the number of visitors on a site. 
-	Whenever a new session starts up this counter is increased. When a session ends this counter is decreased.
+	You should place all of your component variables in this scope. 
+	The variables scope is also called the &quot;private&quot; scope of the component. 
+	This means that you cannot access these variables directly from outside the object. 
+	For example, you can only change the currentTotal variable by calling the addAmount() function. 
+	There is no other way to change the currentTotal variable.
 </p>
 
-<div class="highlight"><pre><code class="cfm"><span class="cm">&lt;!--- Create the counter. ---&gt;</span>
-<span class="nb">&lt;cfset</span> <span class="nv">application.sessionCounter</span> <span class="o">=</span> <span class="nf">createObject</span><span class="p">(</span><span class="s2">&quot;component&quot;</span><span class="p">,</span><span class="s2">&quot;SessionCounter&quot;</span><span class="p">).</span><span class="nf">init</span><span class="p">()</span><span class="nb">&gt;</span>
+<h3>Correctly scope local function variables</h3>
 
-<span class="cm">&lt;!--- Some time later when a session starts up. ---&gt;</span>
-<span class="nb">&lt;cfset</span> <span class="nf">application.sessionCounter.newSessionStarted</span><span class="p">()</span><span class="nb">&gt;</span>
+<p>
+	Local function variables are variables that are only used within a single function. 
+	In the thresholdHasBeenReached() function we have a local function variable called thresholdReached. 
+	This has been &quot;var&quot;ed to ensure the variable is kept private to the function. 
+	If this is not done, then the variable will &quot;leak out&quot; into the variables scope which can cause later problems.
+</p>
 
-<span class="cm">&lt;!--- And later when the session ends. ---&gt;</span>
-<span class="nb">&lt;cfset</span> <span class="nf">application.sessionCounter.sessionEnded</span><span class="p">()</span><span class="nb">&gt;</span>
-
-<span class="cm">&lt;!--- And on another page that reports the number of current sessions. ---&gt;</span>
-<span class="nb">&lt;cfset</span> <span class="nv">numSessions</span> <span class="o">=</span> <span class="nf">application.sessionCounter.getCurrentNumberOfSessions</span><span class="p">()</span><span class="nb">&gt;</span>
-<span class="nb">&lt;cfoutput&gt;</span><span class="p">#</span><span class="nv">numSessions</span><span class="p">#</span><span class="nb">&lt;/cfoutput&gt;</span>
+<div class="highlight"><pre><code class="cfm"><span class="nb">&lt;cfset</span> <span class="k">var</span> <span class="nv">thresholdReached</span> <span class="o">=</span> <span class="nv">variables.currentTotal</span> <span class="nv">ge</span> <span class="nv">variables.threshold</span><span class="nb">&gt;</span>
 </code></pre>
 </div>
 
 
-<h2>Objects are your own personal little workers</h2>
-
 <p>
-	Once you have brought an object to life you need to tell it to do things for you. 
-	Objects don't get tired or bored and are there make you happy so they will stick 
-	around as long as you need them so you can keep on asking them to do things for you.
+	In ColdFusion 8 and earlier you must &quot;var&quot; all local function variables at the top of your function.
 </p>
 
 <p>
-	This is a fundamental idea to get; objects are there to do work for you. 
-	You need to think of them as little workers who only know how to perform very 
-	specific tasks and you can ask them to do your bidding. 
-	They are much more than a simple bundle of data or a wrapper for some functions.
+	In ColdFusion 9 you may var your variables anywhere in the function, 
+	or you may use the new &quot;local&quot; scope that exists in functions. For example:
 </p>
 
-<div class="highlight"><pre><code class="cfm"><span class="nb">&lt;cfset</span> <span class="nf">worker.doSomething</span><span class="p">()</span><span class="nb">&gt;</span>
+<div class="highlight"><pre><code class="cfm"><span class="cm">&lt;!--- Using ColdFusion 9&#39;s &quot;local&quot; scope in a function. ---&gt;</span>
+<span class="nb">&lt;cfset</span> <span class="nv">local.thresholdReached</span> <span class="o">=</span> <span class="nv">variables.currentTotal</span> <span class="nv">ge</span> <span class="nv">variables.threshold</span><span class="nb">&gt;</span>
 </code></pre>
 </div>
 
 
-<h2>Objects can communicate with each other</h2>
+<p>
+	To ensure you have correctly &quot;var&quot;ed all of your component's local variables 
+	you can scan your code using the excellent <a href="http://varscoper.riaforge.org/">VarScoper</a> tool.
+</p>
+
+<h3>Specify the scopes of all variables</h3>
 
 <p>
-	This simply means that one object call another object's functions. 
-	When one object calls another object's function it might be to ask the object to do something, 
-	or to ask the object for some information.
+	When writing code always specify the scope that all of your variables are in. 
+	This can help prevent subtle bugs being introduced in your code.
 </p>
 
 <p>
-	However, objects can't just communicate with any object anywhere in the system. 
-	Objects can only communicate with other objects that it has been &quot;introduced to&quot;. 
-	This simply means that an object can only communicate with other objects that have been 
-	passed via a function call.  
+	For example, this is good:
 </p>
 
-<div class="highlight"><pre><code class="cfm"><span class="cm">&lt;!--- Create a couple of objects ---&gt;</span>
-
-<span class="nb">&lt;cfset</span> <span class="nv">objectA</span> <span class="o">=</span> <span class="nf">createObject</span><span class="p">(</span><span class="s2">&quot;component&quot;</span><span class="p">,</span><span class="s2">&quot;ObjectA&quot;</span><span class="p">)</span><span class="nb">&gt;</span>
-<span class="nb">&lt;cfset</span> <span class="nv">objectB</span> <span class="o">=</span> <span class="nf">createObject</span><span class="p">(</span><span class="s2">&quot;component&quot;</span><span class="p">,</span><span class="s2">&quot;ObjectB&quot;</span><span class="p">)</span><span class="nb">&gt;</span>
-
-<span class="cm">&lt;!--- At this point, they don&#39;t know anything about each other,</span>
-<span class="cm">so let&#39;s introduce them. ---&gt;</span>
-
-<span class="nb">&lt;cfset</span> <span class="nf">objectA.sayHelloTo</span><span class="p">(</span><span class="nv">objectB</span><span class="p">)</span><span class="nb">&gt;</span>
-
-<span class="cm">&lt;!--- This passes a reference of object B into object A,</span>
-<span class="cm">so object A can now call some functions on object B. ---&gt;</span>
+<div class="highlight"><pre><code class="cfm"><span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;addAmount&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfargument</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;amount&quot;</span> <span class="nv">type</span><span class="o">=</span><span class="s2">&quot;numeric&quot;</span> <span class="nv">required</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfset</span> <span class="nv">variables.currentTotal</span> <span class="o">=</span> <span class="nv">variables.currentTotal</span> <span class="o">+</span> <span class="nv">arguments.amount</span><span class="nb">&gt;</span>
+<span class="nb">&lt;/cffunction&gt;</span>
 </code></pre>
 </div>
 
 
-
-<h2>From Here</h2>
-
 <p>
-	Take a look at some <a href="component-basics.html">best practices with components</a>.
+	And this is bad:
 </p>
 
+<div class="highlight"><pre><code class="cfm"><span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;addAmount&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfargument</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;amount&quot;</span> <span class="nv">type</span><span class="o">=</span><span class="s2">&quot;numeric&quot;</span> <span class="nv">required</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfset</span> <span class="nv">currentTotal</span> <span class="o">=</span> <span class="nv">currentTotal</span> <span class="o">+</span> <span class="nv">amount</span><span class="nb">&gt;</span>
+<span class="nb">&lt;/cffunction&gt;</span>
+</code></pre>
+</div>
 
+
+<h3>First variables, then functions</h3>
+
+<p>
+	It is good practice to list out all of your variables at the top of your component 
+	and then follow them with your component's functions. In addition to this, you should
+	always list out every variable you plan to use at the top of your components. 
+	This helps others reading the code to immediately see the set of shared variables within your component. 
+</p>
+
+<p>
+	In this example, comments have been added to identify these sections. 
+	These comment dividers can help other team members quickly find sections within your components.
+</p>
+
+<h3>Specify the types of your data</h3>
+
+<p>
+	It is good practice to specify the types of variables in your function arguments 
+	and your function return values. These will help catch problems with invalid data 
+	being passed into or out of your functions. 
+</p>
+
+<h2>Other common practices</h2>
+
+<p>
+	There are some other common practices that are not shown here 
+	that you can also use these if you prefer their style.
+</p>
+
+<h3>XHTMLise your tags</h3>
+
+<p>
+	Some developers write ColdFusion tags follow correct XHTML syntax. For example, rather than writing this:
+</p>
+
+<div class="highlight"><pre><code class="cfm"><span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;addAmount&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfargument</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;amount&quot;</span> <span class="nv">type</span><span class="o">=</span><span class="s2">&quot;numeric&quot;</span> <span class="nv">required</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfset</span> <span class="nv">variables.currentTotal</span> <span class="o">=</span> <span class="nv">variables.currentTotal</span> <span class="o">+</span> <span class="nv">arguments.amount</span><span class="nb">&gt;</span>
+<span class="nb">&lt;/cffunction&gt;</span>
+</code></pre>
+</div>
+
+
+<p>
+	You would write this:
+</p>
+
+<div class="highlight"><pre><code class="cfm"><span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;addAmount&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfargument</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;amount&quot;</span> <span class="nv">type</span><span class="o">=</span><span class="s2">&quot;numeric&quot;</span> <span class="nv">required</span><span class="o">=</span><span class="s2">&quot;true&quot;</span> <span class="o">/</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfset</span> <span class="nv">variables.currentTotal</span> <span class="o">=</span> <span class="nv">variables.currentTotal</span> <span class="o">+</span> <span class="nv">arguments.amount</span> <span class="o">/</span><span class="nb">&gt;</span>
+<span class="nb">&lt;/cffunction&gt;</span>
+</code></pre>
+</div>
+
+
+<p>
+	Notice that the &lt;cfargument&gt; and &lt;cfset&gt; tags are &quot;closed&quot; 
+	with a &quot;/&gt;&quot; at the end. ColdFusion will accept both styles and it 
+	is up to your team to decide which style you prefer.
+</p>
+
+<p>
+	Note that if you use this syntax when calling a custom tag 
+	then it will cause the code to be executed twice. This behaviour is by design. 
+	Read more about <a href="http://coldfusion.sys-con.com/node/41856">why the code is executed twice</a> 
+	or see the <a href="http://livedocs.adobe.com/coldfusion/8/htmldocs/help.html?content=reuseCode_7.html">ColdFusion documentation</a>.
+</p>
+
+<div class="highlight"><pre><code class="cfm"><span class="cm">&lt;!--- This executes once ---&gt;</span>
+<span class="nt">&lt;cfmodule</span> <span class="na">template=</span><span class="s">&quot;displayUser.cfm&quot;</span><span class="nt">&gt;</span>
+
+<span class="cm">&lt;!--- This executes twice ---&gt;</span>
+<span class="nt">&lt;cfmodule</span> <span class="na">template=</span><span class="s">&quot;displayUser.cfm&quot;</span> <span class="nt">/&gt;</span>
+</code></pre>
+</div>
+
+
+<p>
+	Developers originally started to use this style to be consistent with XHTML documents they were creating.
+	However since the introduction of HTML5, which does not require this XHTML style,
+	applying this style to your CFML code may not be as important.
+</p>
+
+<h3>Use a hint attribute</h3>
+
+<p>
+	A hint attribute can be useful to briefly describe the purpose of a function. For example
+</p>
+
+<div class="highlight"><pre><code class="cfm"><span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;addAmount&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span> <span class="nv">hint</span><span class="o">=</span><span class="s2">&quot;Adds the specified amount to the Threshold Counter.&quot;</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfargument</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;amount&quot;</span> <span class="nv">type</span><span class="o">=</span><span class="s2">&quot;numeric&quot;</span> <span class="nv">required</span><span class="o">=</span><span class="s2">&quot;true&quot;</span> <span class="o">/</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfset</span> <span class="nv">variables.currentTotal</span> <span class="o">=</span> <span class="nv">variables.currentTotal</span> <span class="o">+</span> <span class="nv">arguments.amount</span> <span class="o">/</span><span class="nb">&gt;</span>
+<span class="nb">&lt;/cffunction&gt;</span>
+</code></pre>
+</div>
+
+
+<p>
+	Hints can also be useful if you plan to <a href="http://colddoc.riaforge.org/">generate documentation</a> for your components
+</p>
+
+<h2>Object oriented terminology</h2>
+
+<p>
+	In CFML these building blocks for objects are called <em>components</em>.
+</p>
+
+<p>
+	In other object oriented languages these building blocks are more commonly referred to as <em>classes</em>.
+</p>
+
+<h2>From here</h2>
+
+<p>
+	Take a look at <a href="simple-object.html">a simple example of an object</a>.
+</p>
 
 
 </div>
