@@ -43,28 +43,33 @@ title: What is an Object?
 <cfset application.importantObject = createObject("component","ImportantApplicationObject").init()>
 {% endhighlight %}
 
-<p>Because objects have a lifetime, this also means that they maintain state. The variables inside them can, and typically will, change during their lifetime. A simple example might be an application object that counts the number of visitors on a site. Whenever a new session starts up this counter is increased. When a session ends this counter is decreased.
+<p>
+	Because objects have a lifetime, this also means that they maintain state. 
+	The variables inside them can, and typically will, change during their lifetime. 
+	A simple example might be an application object that counts the number of visitors on a site. 
+	Whenever a new session starts up this counter is increased. When a session ends this counter is decreased.
 </p>
-<pre class="code">
-<span style="color:#3F7F5F; ">&#60;!--- Create the counter. ---&#62;</span>
-<strong><span style="color:#7F0055; font-weight: bold; ">&#60;cfset</span></strong> application.sessionCounter = <span style="color:#7F0055; font-weight: bold; ">createObject</span>(<span style="color:#2A00FF; ">&#34;component&#34;</span>,<span style="color:#2A00FF; ">&#34;SessionCounter&#34;</span>).init()<span style="color:#7F0055; font-weight: bold; ">&#62;</span>
 
-<span style="color:#3F7F5F; ">&#60;!--- Some time later when a session starts up. ---&#62;</span>
-<strong><span style="color:#7F0055; font-weight: bold; ">&#60;cfset</span></strong> application.sessionCounter.newSessionStarted()<span style="color:#7F0055; font-weight: bold; ">&#62;</span>
+{% highlight cfm %}
+<!--- Create the counter. --->
+<cfset application.sessionCounter = createObject("component","SessionCounter").init()>
 
-<span style="color:#3F7F5F; ">&#60;!--- And later when the session ends. ---&#62;</span>
-<strong><span style="color:#7F0055; font-weight: bold; ">&#60;cfset</span></strong> application.sessionCounter.sessionEnded()<span style="color:#7F0055; font-weight: bold; ">&#62;</span>
+<!--- Some time later when a session starts up. --->
+<cfset application.sessionCounter.newSessionStarted()>
 
-<span style="color:#3F7F5F; ">&#60;!--- And on another page that reports the number of current sessions. ---&#62;</span>
-<strong><span style="color:#7F0055; font-weight: bold; ">&#60;cfset</span></strong> numSessions = application.sessionCounter.getCurrentNumberOfSessions()<span style="color:#7F0055; font-weight: bold; ">&#62;</span>
-<strong><span style="color:#7F0055; font-weight: bold; ">&#60;cfoutput&#62;</span></strong>#numSessions#<strong><span style="color:#7F0055; font-weight: bold; ">&#60;/cfoutput&#62;</span></strong>
-</pre>
+<!--- And later when the session ends. --->
+<cfset application.sessionCounter.sessionEnded()>
+
+<!--- And on another page that reports the number of current sessions. --->
+<cfset numSessions = application.sessionCounter.getCurrentNumberOfSessions()>
+<cfoutput>#numSessions#</cfoutput>
+{% endhighlight %}
 
 <h2>Objects are your own personal little workers</h2>
 
 <p>
 	Once you have brought an object to life you need to tell it to do things for you. 
-	Objects don&#39;t get tired or bored and are there make you happy so they will stick 
+	Objects don't get tired or bored and are there make you happy so they will stick 
 	around as long as you need them so you can keep on asking them to do things for you.
 </p>
 
@@ -75,39 +80,40 @@ title: What is an Object?
 	They are much more than a simple bundle of data or a wrapper for some functions.
 </p>
 
-<pre class="code">
-<strong><span style="color:#7F0055; font-weight: bold; ">&#60;cfset</span></strong> worker.doSomething()<span style="color:#7F0055; font-weight: bold; ">&#62;</span>
-</pre>
+{% highlight cfm %}
+<cfset worker.doSomething()>
+{% endhighlight %}
 
 <h2>Objects can communicate with each other</h2>
 
 <p>
-	This simply means that one object call another object&#39;s functions. 
-	When one object calls another object&#39;s function it might be to ask the object to do something, 
+	This simply means that one object call another object's functions. 
+	When one object calls another object's function it might be to ask the object to do something, 
 	or to ask the object for some information.
 </p>
 
 <p>
-	However, objects can&#39;t just communicate with any object anywhere in the system. 
-	Objects can only communicate with other objects that it has been &#34;introduced to&#34;. 
+	However, objects can't just communicate with any object anywhere in the system. 
+	Objects can only communicate with other objects that it has been &quot;introduced to&quot;. 
 	This simply means that an object can only communicate with other objects that have been 
 	passed via a function call.  
 </p>
 
-<pre class="code">
-<span style="color:#3F7F5F; ">&#60;!--- Create a couple of objects ---&#62;</span>
+{% highlight cfm %}
+<!--- Create a couple of objects --->
 
-<strong><span style="color:#7F0055; font-weight: bold; ">&#60;cfset</span></strong> objectA = <span style="color:#7F0055; font-weight: bold; ">createObject</span>(<span style="color:#2A00FF; ">&#34;component&#34;</span>,<span style="color:#2A00FF; ">&#34;ObjectA&#34;</span>)<span style="color:#7F0055; font-weight: bold; ">&#62;</span>
-<strong><span style="color:#7F0055; font-weight: bold; ">&#60;cfset</span></strong> objectB = <span style="color:#7F0055; font-weight: bold; ">createObject</span>(<span style="color:#2A00FF; ">&#34;component&#34;</span>,<span style="color:#2A00FF; ">&#34;ObjectB&#34;</span>)<span style="color:#7F0055; font-weight: bold; ">&#62;</span>
+<cfset objectA = createObject("component","ObjectA")>
+<cfset objectB = createObject("component","ObjectB")>
 
-<span style="color:#3F7F5F; ">&#60;!--- At this point, they don&#39;t know anything about each other,
-so let&#39;s introduce them. ---&#62;</span>
+<!--- At this point, they don't know anything about each other,
+so let's introduce them. --->
 
-<strong><span style="color:#7F0055; font-weight: bold; ">&#60;cfset</span></strong> objectA.sayHelloTo(objectB)<span style="color:#7F0055; font-weight: bold; ">&#62;</span>
+<cfset objectA.sayHelloTo(objectB)>
 
-<span style="color:#3F7F5F; ">&#60;!--- This passes a reference of object B into object A,
-so object A can now call some functions on object B. ---&#62;</span>
-</pre>
+<!--- This passes a reference of object B into object A,
+so object A can now call some functions on object B. --->
+{% endhighlight %}
+
 
 <h2>From Here</h2>
 
