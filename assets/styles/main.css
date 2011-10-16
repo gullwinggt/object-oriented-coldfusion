@@ -75,20 +75,20 @@ header nav li:first-child a {
 
 .main h1 {
 	font-family: 'Alike', serif;
-	font-size: 2em;
+	font-size: 2.4em;
 	line-height: 1em;
 	padding-bottom: 0.5em;
 }
 
 .main h2 {
 	font-family: 'Alike', serif;
-	font-size: 1.6em;
+	font-size: 1.8em;
 	padding: 1.5em 0 0.5em 0;
 }
 
 .main h3 {
 	font-family: 'Alike', serif;
-	font-size: 1.3em;
+	font-size: 1.2em;
 	padding: 1.5em 0 0.5em 0;
 }
 
