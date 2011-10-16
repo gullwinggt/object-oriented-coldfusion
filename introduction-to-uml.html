@@ -1,0 +1,108 @@
+---
+layout: base
+title: Introduction to UML
+---
+
+<h1>Introduction to UML</h1>
+
+<p>
+	The <a href="http://en.wikipedia.org/wiki/Unified_Modeling_Language">Unified Modeling Language</a> 
+	(UML) allows us to create diagrams that represent an object oriented system.
+</p>
+
+<p>
+	You will see UML in almost every form of object oriented reference so it is useful to 
+	understand how to read it.
+</p>
+
+<h2>UML representation of a component</h2>
+
+<p>
+	The UML representation for a simple component would look like this:
+</p>
+
+<p>
+	<img alt='UML diagram of a Person' src='assets/images/4BCAE114FB6E4D8E3BDB19447D5B21FC.png'>
+</p>
+
+<p>
+	The name of the component is in the top section. The middle section represents the variables 
+	inside the component and the bottom section represents the functions.
+</p>
+
+<h3>Variables</h3>
+
+<p>
+	Notice that variables are prefixed with a &quot;-&quot;. 
+	This indicates that the variables &quot;private&quot; and are hidden inside the component.
+</p>
+
+<p>
+	In conventional UML the type of the variable appears after the &quot;:&quot;. 
+	Within ColdFusion, however, the type of variable is less important so for 
+	ColdFusion UML diagrams this can be optional.
+</p>
+
+<h3>Functions</h3>
+
+<p>
+	The functions are prefixed with a &quot;+&quot;. 
+	This indicates that the functions are &quot;public&quot; and can be called from outside the object.
+</p>
+
+<p>
+	As with the variables, the type of the data returned by the function is specified after 
+	a &quot;:&quot;. Again, within the ColdFusion development this is an optional notation.
+</p>
+
+<h2>CFML version of our component</h2>
+
+<p>
+	If we were to implement this component in code then we would have:
+</p>
+
+{% highlight cfm %}
+<cfcomponent output="false">
+
+    <!--- PRIVATE VARIABLES --->
+
+    <cfset variables.firstName = "">
+    <cfset variables.lastName = "">
+
+    <!--- INITIALISATION --->
+
+    <cffunction name="init" output="false">
+        <cfset setFirstName("")>
+        <cfset setLastName("")>
+        <cfreturn this>
+    </cffunction>
+
+    <!--- PUBLIC FUNCTIONS --->
+
+    <cffunction name="setFirstName" output="false">
+        <cfargument name="firstName" type="string" required="true">
+        <cfset variables.firstName = arguments.firstName>
+    </cffunction>
+
+    <cffunction name="getFirstName" output="false" returntype="string">
+        <cfreturn variables.firstName>
+    </cffunction>
+
+    <cffunction name="setLastName" output="false">
+        <cfargument name="lastName" type="string" required="true">
+        <cfset variables.lastName = arguments.lastName>
+    </cffunction>
+
+    <cffunction name="getLastName" output="false" returntype="string">
+        <cfreturn variables.lastName>
+    </cffunction>
+
+</cfcomponent>
+{% endhighlight %}
+
+<h2>From here</h2>
+
+<p>
+	<a href="variable-and-function-access.html">Controlling Variable and Function Access</a>
+</p>
+
