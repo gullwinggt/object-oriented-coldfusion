@@ -5,20 +5,6 @@ title: What is an Object?
 
 <h1>What is an Object?</h1>
 
-ruby code:
-{% highlight ruby %}
-def foo
-  puts 'foo'
-end
-{% endhighlight %}
-
-
-cf code:
-{% highlight cfm %}
-<cfset x = 3>
-{% endhighlight %}
-
-
 <p>
 	In object oriented programming, an object represents a bundling of data and functions that use the data.
 </p>
@@ -53,9 +39,9 @@ cf code:
 	returns a reference to an object so we can keep it around for a while.
 </p>
 
-<pre class="code">
-<strong><span style="color:#7F0055; font-weight: bold; ">&#60;cfset</span></strong> application.importantObject = <span style="color:#7F0055; font-weight: bold; ">createObject</span>(<span style="color:#2A00FF; ">&#34;component&#34;</span>,<span style="color:#2A00FF; ">&#34;ImportantApplicationObject&#34;</span>).init()<span style="color:#7F0055; font-weight: bold; ">&#62;</span>
-</pre>
+{% highlight cfm %}
+<cfset application.importantObject = createObject("component","ImportantApplicationObject").init()>
+{% endhighlight %}
 
 <p>Because objects have a lifetime, this also means that they maintain state. The variables inside them can, and typically will, change during their lifetime. A simple example might be an application object that counts the number of visitors on a site. Whenever a new session starts up this counter is increased. When a session ends this counter is decreased.
 </p>
