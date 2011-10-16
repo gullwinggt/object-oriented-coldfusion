@@ -1,0 +1,278 @@
+---
+layout: base
+title: Component Basics
+---
+
+<h1>Component Basics</h1>
+
+<p>
+	ColdFusion Components, or CFCs, are the starting point for building object oriented systems
+	so it is important to understand what they are and how they differ from objects.
+</p>
+
+<h2>What is a component?</h2>
+
+<p>
+	A component is simply a text file that describes a set of variables and functions 
+	which are used as a &quot;blueprint&quot; or &quot;template&quot; for creating objects. 
+	Once you have created a component then you can use the createObject() function to create objects based on your component. 
+</p>
+
+<h2>Component file names</h2>
+
+<p>
+	All components file names must end with &quot;.cfc&quot;.
+</p>
+
+<p>
+	It is common practice that component filenames use <a href="http://c2.com/cgi/wiki?UpperCamelCase">upper camel case</a>. 
+	The same naming convention is used when providing the component's name as a parameter to createObject().
+</p>
+
+<p>
+	Example file names:
+</p>
+
+<ul>
+<li>User.cfc</li>
+<li>ShoppingCart.cfc</li>
+<li>ProductFinder.cfc</li>
+</ul>
+
+<p>
+	Examples of creating these objects:
+</p>
+
+<ul>
+<li>&lt;cfset user = createObject(&quot;component&quot;,&quot;User&quot;)&gt;</li>
+<li>&lt;cfset shoppingCart = createObject(&quot;component&quot;,&quot;ShoppingCart&quot;)&gt;</li>
+<li>&lt;cfset productFinder = createObject(&quot;component&quot;,&quot;ProductFinder&quot;)&gt;</li>
+</ul>
+
+<h2>Component structure</h2>
+
+<p>
+	Let's take a look at a simple component called ThresholdCounter.cfc so we can review its structure 
+	and take a look at some common best practices. No need to worry about what this component is doing 
+	at the moment, we will look at that later. For now let's focus on it's structure.
+</p>
+
+{% highlight cfm %}
+<cfcomponent output="false">
+
+    <!--- PRIVATE VARIABLES --->
+
+    <cfset variables.threshold = 100>
+    <cfset variables.currentTotal = 0>
+
+    <!--- PUBLIC FUNCTIONS --->
+
+    <cffunction name="addAmount" output="false">
+        <cfargument name="amount" type="numeric" required="true">
+        <cfset variables.currentTotal = variables.currentTotal + arguments.amount>
+    </cffunction>
+
+    <cffunction name="thresholdHasBeenReached" output="false" returntype="boolean">
+        <cfset var thresholdReached = variables.currentTotal ge variables.threshold>
+        <cfreturn thresholdReached>
+    </cffunction>
+
+</cfcomponent>
+{% endhighlight %}
+
+<h3>Suppress whitespace output</h3>
+
+<p>
+	Notice that the &lt;cfcomponent&gt; tag and the &lt;cffunction&gt; tags both have output=&quot;false&quot;. 
+	Always put these on every component and function that you create. 
+	This prevents <a href="http://en.wikipedia.org/wiki/White_space">whitespace</a> 
+	being unintentionally sent to the browser. As a general rule, your components should never send output directly to the browser. 
+</p>
+
+<h3>Use the variables scope to keep your data private</h3>
+
+<p>
+	Our two data values are places in the &quot;variables&quot; scope. 
+</p>
+
+{% highlight cfm %}
+<cfset variables.maxThreshold = 100>
+<cfset variables.currentTotal = 0>
+{% endhighlight %}
+
+<p>
+	You should place all of your component variables in this scope. 
+	The variables scope is also called the &quot;private&quot; scope of the component. 
+	This means that you cannot access these variables directly from outside the object. 
+	For example, you can only change the currentTotal variable by calling the addAmount() function. 
+	There is no other way to change the currentTotal variable.
+</p>
+
+<h3>Correctly scope local function variables</h3>
+
+<p>
+	Local function variables are variables that are only used within a single function. 
+	In the thresholdHasBeenReached() function we have a local function variable called thresholdReached. 
+	This has been &quot;var&quot;ed to ensure the variable is kept private to the function. 
+	If this is not done, then the variable will &quot;leak out&quot; into the variables scope which can cause later problems.
+</p>
+
+{% highlight cfm %}
+<cfset var thresholdReached = variables.currentTotal ge variables.threshold>
+{% endhighlight %}
+
+<p>
+	In ColdFusion 8 and earlier you must &quot;var&quot; all local function variables at the top of your function.
+</p>
+
+<p>
+	In ColdFusion 9 you may var your variables anywhere in the function, 
+	or you may use the new &quot;local&quot; scope that exists in functions. For example:
+</p>
+
+{% highlight cfm %}
+<!--- Using ColdFusion 9's "local" scope in a function. --->
+<cfset local.thresholdReached = variables.currentTotal ge variables.threshold>
+{% endhighlight %}
+
+<p>
+	To ensure you have correctly &quot;var&quot;ed all of your component's local variables 
+	you can scan your code using the excellent <a href="http://varscoper.riaforge.org/">VarScoper</a> tool.
+</p>
+
+<h3>Specify the scopes of all variables</h3>
+
+<p>
+	When writing code always specify the scope that all of your variables are in. 
+	This can help prevent subtle bugs being introduced in your code.
+</p>
+
+<p>
+	For example, this is good:
+</p>
+
+{% highlight cfm %}
+<cffunction name="addAmount" output="false">
+    <cfargument name="amount" type="numeric" required="true">
+    <cfset variables.currentTotal = variables.currentTotal + arguments.amount>
+</cffunction>
+{% endhighlight %}
+
+<p>
+	And this is bad:
+</p>
+
+{% highlight cfm %}
+<cffunction name="addAmount" output="false">
+    <cfargument name="amount" type="numeric" required="true">
+    <cfset currentTotal = currentTotal + amount>
+</cffunction>
+{% endhighlight %}
+
+<h3>First variables, then functions</h3>
+
+<p>
+	It is good practice to list out all of your variables at the top of your component 
+	and then follow them with your component's functions. In addition to this, you should
+	always list out every variable you plan to use at the top of your components. 
+	This helps others reading the code to immediately see the set of shared variables within your component. 
+</p>
+
+<p>
+	In this example, comments have been added to identify these sections. 
+	These comment dividers can help other team members quickly find sections within your components.
+</p>
+
+<h3>Specify the types of your data</h3>
+
+<p>
+	It is good practice to specify the types of variables in your function arguments 
+	and your function return values. These will help catch problems with invalid data 
+	being passed into or out of your functions. 
+</p>
+
+<h2>Other common practices</h2>
+
+<p>
+	There are some other common practices that are not shown here 
+	that you can also use these if you prefer their style.
+</p>
+
+<h3>XHTMLise your tags</h3>
+
+<p>
+	It has become common for some developers write ColdFusion tags follow correct XHTML syntax. For example, rather than writing this:
+</p>
+
+{% highlight cfm %}
+<cffunction name="addAmount" output="false">
+    <cfargument name="amount" type="numeric" required="true">
+    <cfset variables.currentTotal = variables.currentTotal + arguments.amount>
+</cffunction>
+{% endhighlight %}
+
+<p>
+	You would write this:
+</p>
+
+{% highlight cfm %}
+<cffunction name="addAmount" output="false">
+    <cfargument name="amount" type="numeric" required="true" />
+    <cfset variables.currentTotal = variables.currentTotal + arguments.amount />
+</cffunction>
+{% endhighlight %}
+
+<p>
+	Notice that the &lt;cfargument&gt; and &lt;cfset&gt; tags are &quot;closed&quot; 
+	with a &quot;/&gt;&quot; at the end. ColdFusion will accept both styles and it 
+	is up to your team to decide which style you prefer.
+</p>
+
+<p>
+	It is worth noting, however, that if you use this syntax when calling a custom tag 
+	then it will cause the code to be executed twice. This behaviour is by design. 
+	Read more about <a href="http://coldfusion.sys-con.com/node/41856">why the code is executed twice</a> 
+	or see the <a href="http://livedocs.adobe.com/coldfusion/8/htmldocs/help.html?content=reuseCode_7.html">ColdFusion documentation</a>.
+</p>
+
+{% highlight cfm %}
+<!--- This executes once --->
+<cfmodule template="displayUser.cfm">
+
+<!--- This executes twice --->
+<cfmodule template="displayUser.cfm" />
+{% endhighlight %}
+
+<h3>Use a hint attribute</h3>
+
+<p>
+	A hint attribute can be useful to briefly describe the purpose of a function. For example
+</p>
+
+{% highlight cfm %}
+<cffunction name="addAmount" output="false" hint="Adds the specified amount to the Threshold Counter.">
+    <cfargument name="amount" type="numeric" required="true" />
+    <cfset variables.currentTotal = variables.currentTotal + arguments.amount />
+</cffunction>
+{% endhighlight %}
+
+<p>
+	Hints can also be useful if you plan to <a href="http://colddoc.riaforge.org/">generate documentation</a> for your components
+</p>
+
+<h2>Object oriented terminology</h2>
+
+<p>
+	In CFML these building blocks for objects are called components.
+</p>
+
+<p>
+	In other object oriented languages these building blocks are more commonly referred to as <i>classes</i>.
+</p>
+
+<h2>From here</h2>
+
+<p>
+	Take a look at <a href="simple-object.html">a simple example of an object</a>.
+</p>
+
