@@ -1,0 +1,619 @@
+---
+layout: base
+title: Object Factory
+---
+
+<h1>Writing Your Own Object Factory</h1>
+
+<p>
+	An object factory is a special kind of object that knows how to create other objects. 
+	In particular it is useful for creating objects that need to be &quot;assembled together&quot;, 
+	in particular when using <a href="dependency-injection.html">dependency injection</a>. 
+	Let's take a look in more detail at object factories and how your might write one youself. 
+</p>
+
+<h2>Object assembly</h2>
+
+<p>
+	In CFML there are two common techniques for assembling objects together at creation. 
+	Suppose we have a Car object that needs an Engine object to help it function:
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<!--- Create a separate engine and car object ---> 
+<cfset engine = createObject("component","Engine").init()>
+<cfset car = createObject("component","Car").init()>
+{% endhighlight %}
+
+
+
+
+
+<p>
+	The first technique to assemble these together is to provide the engine object to the car as a parameter to the init() function.
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cfset engine = createObject("component","Engine").init()>
+<cfset car = createObject("component","Car").init(engine)>
+{% endhighlight %}
+
+
+
+
+
+<p>
+	The second technique provides the engine object to the car using a <i>setter</i> function:
+</p>
+
+
+
+
+
+{% highlight cfm %}
+<cfset engine = createObject("component","Engine").init()>
+<cfset car = createObject("component","Car").init()>
+<cfset car.setEngine(engine)>
+{% endhighlight %}
+
+
+
+
+
+<p>
+	Assembling objects in this way is referred to as <a href="dependency-injection.html">dependency injection</a>.
+</p>
+
+<p>
+	However if you needed to create many cars throughout your application it will become difficult to maintain 
+	if you needed three lines of code in every place cars needed to be created. 
+	Instead we can move this code into a separate <i>factory</i> object whose only purpose is to create objects. 
+</p>
+
+<p>
+	An object factory has the single responsible of creating other objects. 
+	They provide a benefit in hiding how your objects are constructured, 
+	and they may also hide the location of where objects are physically located on disk. 
+	This allows you to freely change the way the objects are assembled as well as reorganise 
+	the directory structure of your components without affecting the rest of you application code. 
+</p>
+
+<h2>Types of objects</h2>
+
+<p>
+	Before we discuss how a factory might be implemented, let's discuss the two kinds of objects we may be creating.
+</p>
+
+<p>
+	1) Singleton objects, and
+</p>
+
+<p>
+	2) Transient objects
+</p>
+
+<h3>Singleton objects</h3>
+
+<p>
+	A singleton is loosely defined as an object that only has a single instance in your application. 
+	It is created only once (usually when the application starts up) and is then shared by any objects 
+	that need it. Singletons typically exist for the entire duration of an application and are usually 
+	placed in the application scope. An example of a singleton might be a component that contains all 
+	of the settings for an application. You would create a single &quot;ApplicationSettings&quot; object 
+	when the application first starts up and that single object would then be shared across your entire application.
+</p>
+
+<h3>Transient objects</h3>
+
+<p>
+	Transient objects, on the other hand, may have many instances in an application. 
+	They are typically created, used, and then discarded at the end of a page request. 
+	An example of a transient may be a &quot;ProductForm&quot; object. 
+	Suppose you are editing a product's details within your applications administration area. 
+	When saving a product's details you may create a ProductForm object temporarily 
+	to assist in validating and saving a product's details. This ProductForm object 
+	would be &quot;thrown away&quot; once the validation or save was completed, 
+	but it would be created again when the next product is edited.
+</p>
+
+<h2>Implementing a simple Transient object factory</h2>
+
+<p>
+	Let's discuss how you might implement a simple transient object factory. 
+	In other words, this is a factory that will create the same kinds of objects over and over again. 
+	For our example, let's implement a CarFactory that can create a few different types of Cars.
+</p>
+
+<p>
+	<img alt='CarFactory UML' src='assets/images/57D02E764B368A7C8E33E6FA5CF3BFC6.png' />
+</p>
+
+<p>
+	Our CarFactory may be implemented as follows:
+</p>
+
+
+
+
+
+{% highlight cfm %}
+<cfcomponent name="CarFactory" output="false">
+
+    <cffunction name="init" output="false">
+        <cfreturn this>
+    </cffunction>
+
+    <cffunction name="createSimpleCar" output="false">
+        <cfset var engine = createObject("component","SimpleEngine").init()>
+        <cfset var car = createObject("component","Car").init(engine)>
+        <cfreturn car>
+    </cffunction>
+
+    <cffunction name="createTurboCar" output="false">
+        <cfset var engine = createObject("component","TurboEngine").init()>
+        <cfset var car = createObject("component","Car").init(engine)>
+        <cfreturn car>
+    </cffunction>
+
+    <cffunction name="createNuclearCar" output="false">
+        <cfset var core = createObject("component","NuclearCore").init()>
+        <cfset var engine = createObject("component","NuclearEngine").init(core)>
+        <cfset var car = createObject("component","Car").init(engine)>
+        <cfreturn car>
+    </cffunction>
+
+</cfcomponent>
+{% endhighlight %}
+
+
+
+
+
+<p>
+	To use our car factory we may write code such as:
+</p>
+
+
+
+
+
+{% highlight cfm %}
+<cfset factory = createObject("component","CarFactory").init()>
+<cfset car = factory.createSimpleCar()>
+{% endhighlight %}
+
+
+
+
+
+<p>
+	So in this example, our transient object factory has a separate function for each kind of object it creates. 
+</p>
+
+<h2>Implementing a simple Singleton object factory</h2>
+
+<p>
+	A singleton object factory create objects but ensures that they are only ever created once within an application.
+</p>
+
+<p>
+	For this example, let's assume that you have an application that needs to 
+	retrieve data from two different databases. 
+	It is useful to create a separate &quot;Datasource&quot; object for each database:
+</p>
+
+<p>
+	<img alt='Datasource UML diagram' src='assets/images/5AEA33A175B7217082540362E78DC961.png'>
+</p>
+
+<p>
+	Datasource objects only need to be created once when the application is first started, 
+	so they are good candidates for singleton objects.
+</p>
+
+<p>
+	Let's create a DatasourceFactory that provides us with our two different datasource objects. 
+	Let's assume that one database is used for the main application, the other database is 
+	specifically for providing reporting data. 
+</p>
+
+<p>
+	<img alt='DatasourceFactory UML diagram' src='assets/images/51F022573DEEB4EFF46368829AA2C0A7.png'>
+</p>
+
+<p>
+	For our singleton implementation we need to ensure that each datasource is only created once:
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cfcomponent name="DatasourceFactory" output="false">
+
+    <!--- Variable to hold the created datasource objects --->
+    <cfset variables.objects = {}>
+
+    <cffunction name="init" output="false">
+        <cfset variables.objects["ApplicationDatasource"] = createObject("component","Datasource").init("appName","appUser","appPass")>
+        <cfset variables.objects["ReportingDatasource"] = createObject("component","Datasource").init("reportName","reportUser","reportPass")>
+        <cfreturn this>
+    </cffunction>
+
+    <cffunction name="createApplicationDatasource" output="false">
+        <cfreturn variables.objects["ApplicationDatasource"]>
+    </cffunction>
+
+    <cffunction name="createReportingDatasource" output="false">
+        <cfreturn variables.objects["ReportingDatasource"]>
+    </cffunction>
+
+</cfcomponent>
+{% endhighlight %}
+
+
+
+
+
+<p>
+	We can see here that the datasource objects are created when the DatasourceFactory is first created.
+</p>
+
+<p>
+	To use our DatasourceFactory we would have code such as:
+</p>
+
+
+
+
+
+{% highlight cfm %}
+<cfset factory = createObject("component","DatasourceFactory").init()>
+<cfset datasource = factory.createReportingDatasource()>
+{% endhighlight %}
+
+
+
+
+<p>
+	Any subsequent calls to the createReportingDatasource() would return the original instance of the reporting datasource.
+</p>
+
+<p>
+	A transient object factory always creates new objects every time one of its functions is called. 
+	A singleton object factory only creates the objects once and continues reusing them over and over again.
+</p>
+
+<h2>Generic object factories</h2>
+
+<p>
+	So far we have discussed object factories that have a separate function for each type of object they create. 
+	These types of factories are useful when creating small sets of related objects, such as our CarFactory 
+	which created cars and our DatasourceFactory that created data sources. 
+	However, it is often useful to have one larger factory that is used as a central point to create all 
+	(or most) of your objects. When you have a factory that can create a wide variety of different kinds of objects, 
+	having a separate function for each object type can become unmanageable. So rather than having a separate function 
+	for each kind of object, we can create a generic object factory has a single function such as create().
+</p>
+
+<p>
+	<img alt='Generic ObjectFactory UML diagram' src='assets/images/992D6A314E139A912ADBF58F6DDB5079.png'>
+</p>
+
+<p>
+	In a generic object factory we provide a unique name for each type of object we want to create. 
+	For example to use our generic factory we may write:
+</p>
+
+
+
+
+{% highlight cfm %}
+<cfset factory = createObject("component","ObjectFactory").init()>
+<cfset userService = factory.create("UserService")>
+<cfset productService = factory.create("ProductService")>
+<cfset securityService = factory.create("SecurityService")>
+{% endhighlight %}
+
+
+
+
+<p>
+	In this example, we are creating some &quot;Service&quot; objects 
+	that provide functionality for different parts of an application.
+</p>
+
+<h3>Implementing a simple generic Singleton object factory</h3>
+
+<p>
+	Let's take a look at how you might start implementing a simple generic object factory for singleton objects.
+</p>
+
+<p>
+	For this example, our factory will create a UserService object, 
+	a ProductService object and a SecurityService object. Each of these objects provides high level functions relating to Users, 
+	Products and Security accordingly.
+</p>
+
+<p>
+	Each of these &quot;Service&quot; objects will need to interact with a database. 
+	A &quot;gateway&quot; is a common name given to objects that interact directly with a database 
+	(and contain SQL for an application), so we will also create a UserGateway, a ProductGateway and a 
+	SecurityGateway accordingly. 
+</p>
+
+<p>
+	Each of these &quot;Gateways&quot; needs to directly access the database, 
+	so they will require the use of a &quot;Datasource&quot; object.
+</p>
+
+<p>
+	Let's create a UML diagram that describes these objects and their relationships. 
+</p>
+
+<p>
+	<img alt='Service, Gateway, Datasource UML diagram' src='assets/images/09F172950D7347D55577511A705127B5.png'>
+</p>
+
+<p>
+	The objects joined by a line with an arrow represents an &quot;association&quot; between objects. 
+	The ProductService is associated with the ProductGateway, and the ProductGateway is associated with the Datasource, etc. 
+</p>
+
+<p>
+	Don't worry too much about what each of these objects are for the moment, 
+	the key here is to understand that each Service object needs the help of several other objects, 
+	and this factory just demonstrates a technique for assembling them together.
+</p>
+
+<p>
+	To create our UserService, we may have code such as:
+</p>
+
+
+
+
+
+{% highlight cfm %}
+<!--- Create the datasource --->
+<cfset datasource = createObject("component","Datasource").init("name","user","pass")>
+
+<!--- Create the gateway, and provide it with the datasource ---> 
+<cfset userGateway = createObject("component","UserGateway").init()>
+<cfset userGateway.setDatasource(datasource)>
+
+<!--- Create the service, and provide it with the gateway --->
+<cfset userService = createObject("component","UserService").init()>
+<cfset userService.setUserGateway(userGateway)>
+{% endhighlight %}
+
+
+
+
+
+<p>
+	We would use a similar technique for each of the service objects. 
+	Now, let's look at how this might be implemented in an object factory.
+</p>
+
+
+
+
+{% highlight cfm %}
+<cfcomponent name="ObjectFactory" output="false">
+
+    <!--- Variable to hold singleton objects --->
+    <cfset variables.singletons = {}>
+
+    <!--- INITIALISATION --->
+
+    <cffunction name="init" output="false">
+        <cfset createSingletons()>
+        <cfreturn this>
+    </cffunction>
+
+    <!--- PUBLIC FUNCTIONS --->
+
+    <cffunction name="create" output="false">
+        <cfargument name="name" required="true">
+
+        <!--- If the requested object was not found, then throw an error --->
+        <cfif not structKeyExists(variables.singletons,arguments.name)>
+            <cfthrow message="Cannot create object #arguments.name#">
+        </cfif>
+
+        <!--- Otherwise just return the object --->
+        <cfreturn variables.singletons[arguments.name]>
+    </cffunction>
+
+    <!--- PRIVATE FUNCTIONS --->
+
+  <cffunction name="createSingletons" output="false" access="private">
+
+        <!--- Local struct so we don't need to "var" everything --->
+ 
+       <cfset var local = {}>
+
+        <!--- Create the datasource --->
+
+        <cfset local.datasource = createObject("component","com.util.Datasource").init("name","user","pass")>
+
+        <!--- Create the gateways --->
+
+        <cfset local.userGateway = createObject("component","com.user.UserGateway").init()>
+        <cfset local.userGateway.setDatasource(local.datasource)>
+
+        <cfset local.productGateway = createObject("component","com.product.ProductGateway").init()>
+        <cfset local.productGateway.setDatasource(local.datasource)>
+
+        <cfset local.securityGateway = createObject("component","com.security.SecurityGateway").init()>
+        <cfset local.securityGateway.setDatasource(local.datasource)>
+
+        <!--- Create the services --->
+
+        <cfset local.userService = createObject("component","com.user.UserService").init()>
+        <cfset local.userService.setUserGateway(local.userGateway)>
+
+        <cfset local.productService = createObject("component","com.product.ProductService").init()>
+        <cfset local.productService.setProductGateway(local.productGateway)>
+
+        <cfset local.securityService = createObject("component","com.security.SecurityService").init()>
+        <cfset local.securityService.setSecurityGateway(local.securityGateway)>
+
+        <!--- Add the service objects to the "singleton" struct --->
+
+        <cfset addSingleton("UserService",local.userService)>
+        <cfset addSingleton("ProductService",local.productService)>
+        <cfset addSingleton("SecurityService",local.securityService)>
+
+    </cffunction>
+
+    <cffunction name="addSingleton" output="false" access="private">
+        <cfargument name="name" required="true">
+        <cfargument name="object" required="true">
+        <cfset variables.singletons[arguments.name] = arguments.object>
+    </cffunction>
+
+</cfcomponent>
+{% endhighlight %}
+
+
+
+
+
+<p>
+	You'll notice that when we create our object factory and call the init() function 
+	it immediately creates all of the singleton objects. So most of the work is being 
+	done in the createSingletons() function.
+</p>
+
+<p>
+	You can also see that after they objects have been created they are all added 
+	to the singletons struct via the addSingleton() function.
+</p>
+
+<p>
+	You may also have noticed that the objects in this example are all specified 
+	with a full path to their location, such as &quot;com.user.UserService&quot;. 
+	When the object factory is used, this object is simply referred to using an alias &quot;UserService&quot;:
+</p>
+
+
+
+
+
+{% highlight cfm %}
+<!--- Create the factory --->
+<cfset factory = createObject("component","ObjectFactory").init()>
+
+<!--- Create the user service object using an alias ---> 
+<cfset userService = factory.create("UserService")>
+{% endhighlight %}
+
+
+
+
+
+<p>
+	This is very useful if the locations of components ever need to be moved.
+</p>
+
+<h3>Adding Transients to our generic object factory</h3>
+
+<p>
+	As we have seen above, transient objects are easily created using a Transient object factory, 
+	where we have a separate function for each type of object.
+</p>
+
+<p>
+	The simplest approach for integrating transient objects into our generic object factory 
+	is to simply add our Transient object factory <i>into</i> the generic object factory.
+</p>
+
+<p>
+	Let's now add out CarFactory into our createSingletons() functions:
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cffunction name="createSingletons" output="false" access="private">
+
+    <!--- Local struct so we don't need to "var" everything --->
+ 
+    <cfset var local = {}>
+
+    <!--- Create our objects here --->
+ 
+   ...
+    <cfset local.carFactory = createObject("component","com.car.CarFactory").init()>
+
+    <!--- Add all objects to the "singleton" struct --->
+
+    ... 
+    <cfset addSingleton("CarFactory",local.carFactory)>
+
+</cffunction>
+{% endhighlight %}
+
+
+
+
+
+<p>
+	If we wanted to create some cars, we may write some code as follows:
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cfset objectFactory = createObject("component","ObjectFactory").init()>
+<cfset carFactory = objectFactory.create("CarFactory")>
+<cfset simpleCar = carFactory.createSimpleCar()>
+{% endhighlight %}
+
+
+
+
+
+<h2>Dependency injection frameworks</h2>
+
+<p>
+	Everything we have discussed so far covers how you might implement an simple object factory to manage the
+	<a href="dependency-injection.html">object dependencies</a> in your own application, 
+	however there are some community developed object factories, more commonly referred to as Dependency Injection frameworks, 
+	that do all of this work for you, and much more.
+</p>
+
+<h3>Coldspring</h3>
+
+<p>
+	Coldspring is the defacto dependency injection framework for CFML. 
+	It uses a simple XML file to describe your objects and how they are related to each other. 
+	ColdSpring provides some more advanced features beyond dependency injection and is ideally used for singleton objects but not transients. 
+</p>
+
+<p>
+	<a href="http://www.coldspringframework.org/">http://www.coldspringframework.org/</a>
+</p>
+
+
+
