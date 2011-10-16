@@ -329,3 +329,137 @@ title: Dependency Injection
 
 
 
+
+
+
+
+
+
+
+
+<p>
+	So we made a significant change to the engine, but because we kept the set of engine functions unchanged 
+	(i.e. we kept the <i>interface</i> the same) then we can readily swap our new nuclear powered engine into our Car object.
+</p>
+
+<h2>Introducing an object factory</h2>
+
+<p>
+	By separating the creation of our objects from the usage of our objects we have reduced coupling, 
+	improved maintainability, but increased the complexity of creating these objects. 
+	If you needed to create car objects in many places in your application it would become very messy 
+	very quickly due to the need for a core object, an engine object and a car object for each car with 
+	a nuclear engine. It is better to move this object construction into its own <i>factory</i> object.
+</p>
+
+<p>
+	This factory can hide any complexities associated with creating objects.
+</p>
+
+<p>
+	<img alt='Car Factory UML diagram' src='assets/images/EAD12D85D23DD31E041456C7F30442E2.png'>
+</p>
+
+<p>
+	This may be implemented as follows:
+</p>
+
+
+
+{% highlight cfm %}
+<component name="CarFactory" output="false">
+
+    <cffunction name="init" output="false">
+        <cfreturn this>
+    </cffunction>
+
+    <cffunction name="createSimpleCar" output="false">
+        <cfset var engine = createObject("component","SimpleEngine").init()>
+        <cfset var car = createObject("component","Car").init(engine)>
+        <cfreturn car>
+    </cffunction>
+
+    <cffunction name="createNuclearPoweredCar" output="false">
+        <cfset var core = createObject("component","NuclearCore").init()>
+        <cfset var engine = createObject("component","NuclearEngine").init(core)>
+        <cfset var car = createObject("component","Car").init(engine)>
+        <cfreturn car>
+
+    </cffunction>
+
+</cfcomponent>
+{% endhighlight %}
+
+
+
+<p>
+	Object factories are good candidates for being placed in the application scope:
+</p>
+
+
+
+{% highlight cfm %}
+<cfset application.carFactory = createObject("component","CarFactory").init()>
+{% endhighlight %}
+
+
+<p>
+	And to use our factory, we may write:
+</p>
+
+
+
+{% highlight cfm %}
+<cfset car = application.carFactory.createSimpleCar()>
+<cfset car.applyPressureToAcceleratorPedal(5)>
+<cfoutput>
+    <p>
+        The simple car's speed is #car.getCurrentSpeed()#
+    </p>
+</cfoutput>
+
+<cfset nuclearCar = application.carFactory.createNuclearPoweredCar()>
+<cfset nuclearCar.applyPressureToAcceleratorPedal(5)>
+<cfoutput>
+    <p>
+        The nuclear powered car's speed is #car.getCurrentSpeed()#
+    </p>
+</cfoutput>
+{% endhighlight %}
+
+
+
+<h2>Terminology</h2>
+
+<p>
+	Dependency Injection is the common term for this technique of associating objects, 
+	however this technique is also known as &quot;<a href="http://en.wikipedia.org/wiki/Inversion_of_control">Inversion of Control</a>&quot;, or &quot;IoC&quot;.
+</p>
+
+<p>
+	The idea behind this is that conventional control would see an object <i>grabbing</i> whatever things it needed, 
+	as applied in <a href="procedural-vs-object-oriented-programming">procedural programming</a>. 
+	When this control is <i>inverted</i> your objects are instead <i>given</i> what they need and they are only 
+	permitted to use what they have been explicitly given.
+</p>
+
+<p>
+	Another term used to describe the joining of objects using dependency injection is <i>wiring</i>. 
+	In other words you may say that when one object is injected into another object then they are <i>wired together</i>. 
+</p>
+
+<h2>Conclusion</h2>
+
+<p>
+	One of the fundamental guides in good object oriented design is to have objects that have low coupling. 
+	Having objects that have single responsibilities and separating out object construction from object usage 
+	can significantly help in reducing the coupling between objects. The side effect of this is that object 
+	creation becomes more complicated, but an object factory provides a good technique to manage the creation of these objects.
+</p>
+
+<h2>From here</h2>
+
+<p>
+	<a href="object-factory.html">Writing your own Object Factory</a>
+</p>
+
