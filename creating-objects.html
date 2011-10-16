@@ -1,0 +1,281 @@
+---
+layout: base
+title: Creating Objects
+---
+
+<h1>Creating Objects</h1>
+
+<p>
+	When you <i>write code</i> for an object oriented application you are 
+	creating <a href="component-basics.html">components</a>. 
+	When you <i>run</i> your application your components are used as &quot;blueprints&quot; 
+	to create <a href="what-is-an-object.html">objects</a>.
+</p>
+
+<p>
+	So you can think of components as instructions on how to create many similar objects, 
+	which is similar to how blueprints for a house could be used to build many similar houses. 
+</p>
+
+<p>
+	<img src="assets/images/object-blueprint.gif" alt="House blueprint vs Object blueprint">
+</p>
+
+<p>
+	In the diagram we see one house blueprint on a piece of paper, 
+	which is used to create three lovely houses. 
+	We also see our object blueprint on a piece of paper (i.e. our component) 
+	which is used to create three separate objects.
+</p>
+
+<p>
+	Our component defines a private internal variable called <b>name</b> 
+	and a function <b>getName()</b>. Notice that this results in <i>each</i> 
+	of our objects having their own personal private <b>name</b> variable and <b>getName()</b> function.
+</p>
+
+<p>
+	Sometimes you may only need one object of a particular kind in your application, 
+	such as an object that knows how to authenticate users, and other times you may 
+	need more than one of a kind of object, such as having one object for every user 
+	currently logged into your system. Generally, however, components are used to create many objects.
+</p>
+
+<h2>Object creation</h2>
+
+<p>
+	ColdFusion provides several techniques for creating objects including the &lt;cfinvoke&gt; tag, 
+	the &lt;cfobject&gt; tag and the createObject() function.
+</p>
+
+<h3>The cfinvoke tag</h3>
+
+<p>
+	The &lt;cfinvoke&gt; tag is used to execute a function on a component.
+	Let's look at a common example of how &lt;cfinvoke&gt; is used:
+</p>
+
+{% highlight cfm %}
+<cfinvoke
+    component="Person"
+    method="getName"
+    returnVariable="myName">
+{% endhighlight %}
+
+<p>
+	This code does the following
+</p>
+
+<ol>
+<li>creates a new object based on the Person.cfc component,</li>
+<li>executes it's getName() function,</li>
+<li>returns the name in a variable called myName, and finally</li>
+<li>discards the object created in (1)</li>
+</ol>
+
+<p>
+	The main idea to note here is that the object is created and discarded in the one step.
+</p>
+
+<p>
+	There is <a href="http://livedocs.adobe.com/coldfusion/8/htmldocs/help.html?content=Tags_i_10.html|quite">a bit more</a>
+	to this tag but this is a good example of common usage.
+</p>
+
+<h3>The cfobject tag</h3>
+
+<p>
+	The &lt;cfobject&gt; tag is different in that it is used to 
+	<i>create</i> objects and not discard them immediately.
+</p>
+
+{% highlight cfm %}
+<cfobject
+    type="component"
+    component="Person"
+    name="myPerson">
+{% endhighlight %}
+
+<p>
+	This example takes the following steps
+</p>
+
+<ol>
+<li>Creates a new object based on the Person.cfc component</li>
+<li>Places a &quot;reference&quot; to that object in the myPerson variable.</li>
+</ol>
+
+<p>
+	A &quot;reference&quot; is essentially handle that lets you &quot;hold onto&quot; 
+	an object once it has been created. This reference can be given any name you like, 
+	such as &quot;myPerson&quot;. Once you have a reference to an object you can then 
+	call whatever functions you need on that object.
+</p>
+
+<p>
+	So &lt;cfobject&gt; allows us to write code such as:
+</p>
+
+{% highlight cfm %}
+<!--- Create a new Person object and call it "myPerson" --->
+<cfobject
+    type="component"
+    component="Person"
+    name="myPerson">
+
+<!--- Call some functions on myPerson --->
+<cfset name = myPerson.getName()>
+<cfset dob = myPerson.getDateOfBirth()>
+{% endhighlight %}
+
+<p>
+	As with &lt;cfinvoke&gt; there is <a href="http://livedocs.adobe.com/coldfusion/8/htmldocs/help.html?content=Tags_m-o_08.html">much more to this tag</a> 
+	than this simple example.
+</p>
+
+<h3>The createObject() function</h3>
+
+<p>
+	The createObject() function is very similar to &lt;cfobject&gt; 
+	in that its purpose is to create objects and provide you with a 
+	reference to them for further use.
+</p>
+
+{% highlight cfm %}
+<cfset myPerson = createObject("component","Person")>
+{% endhighlight %}
+
+<p>
+	This is identical to the &lt;cfobject&gt; example above:
+</p>
+
+<ol>
+<li>Creates a new object based on the Person.cfc component</li>
+<li>Places a &quot;reference&quot; to that object in the myPerson variable.</li>
+</ol>
+
+<p>
+	And then using our object:
+</p>
+
+{% highlight cfm %}
+<!--- Create a new Person object and call it "myPerson" --->
+<cfset myPerson = createObject("component","Person")>
+
+<!--- Call some functions on myPerson --->
+<cfset name = myPerson.getName()>
+<cfset dob = myPerson.getDateOfBirth()>
+{% endhighlight %}
+
+<h2>Which syntax should you use?</h2>
+
+<p>
+	The tag based techniques have particular uses, but typically you should use the createObject() function. 
+	For simple component usage the createObject() function can perform the behaviour of both the cfinvoke and cfobject tag.
+</p>
+
+<p>
+	cfinvoke: Executes functions on an object.
+</p>
+
+<p>
+	cfobject: Creates an object and returns a reference.
+</p>
+
+<p>
+	createObject: Creates an object and returns a reference and allows you to execute a function immediately on that object.
+</p>
+
+<cfset myPerson = createObject("component","Person").init()>
+
+<p>
+	This code:
+</p>
+
+<p>
+	a) Creates a new object based on the Person.cfc component
+</p>
+
+<p>
+	b) Immediately calls the function called init() which performs some
+	<a href="init-function.html">object initalisation</a>.
+</p>
+
+<p>
+	c) Places a &quot;reference&quot; to that object in the myPerson variable.
+</p>
+
+<h2>Note about object initialisation</h2>
+
+<p>
+	We have previously discussed that objects are conventionally initialised 
+	using an <a href="init-function">init() function</a>.
+</p>
+
+<p>
+	The cfinvoke and cfobject tags provide no convenient syntax for initialising 
+	objects with an init() function.
+</p>
+
+<p>
+	Creating and initialising objects can only be conveniently done using the 
+	createObject() function:
+</p>
+
+{% highlight cfm %}
+<!--- Create and initialise a Person object --->
+<cfset myPerson = createObject("component","Person").init()>
+{% endhighlight %}
+
+<h2>Performance considerations</h2>
+
+<p>
+	It is important to be aware that object creation in Adobe ColdFusion 8 (and earlier) can be very slow. 
+	The performance of object creation is dependent on several factors such as the number of functions 
+	within the object as well as the number of function calls that occur during the object's initialisation 
+	(e.g., function calls that may occur within a component's init() function).
+</p>
+
+<p>
+	This fact has very important consequences for object oriented development:
+</p>
+
+<p>
+	1) Firstly, any activity that will generate a large number of objects should 
+	typically be avoided. This includes reading many records from a database and 
+	converting them all to objects, which is the typical approach used in other object oriented languages.
+</p>
+
+<p>
+	2) Another consideration is that you may not be able to be very fine-grained in your object creation. 
+	I.e., you may not be able to have lots of little objects being created, you may need to find alternate 
+	techniques in these situations.
+</p>
+
+<p>
+	ColdFusion 9, Railo and Blue Dragon have better object creation performance than Adobe ColdFusion 8.
+</p>
+
+<h2>Terminology</h2>
+
+<p>
+	Each object that you create is referred to as an <i>instance</i> of that object.
+</p>
+
+<p>
+	For example, if you were developing an application with products and a shopping cart, 
+	you may say that for each customer who visits your site they only have one <i>instance</i> 
+	of a shopping cart object, however they may have many <i>instances</i> of a Product object 
+	that can be placed into the shopping cart.
+</p>
+
+<p>
+	Each instance of an object is a separate copy of the object that maintains its own internal state.
+</p>
+
+<h2>From Here</h2>
+
+<p>
+	<a href="introduction-to-uml.html">Introduction to UML</a>
+</p>
+
