@@ -1,0 +1,272 @@
+---
+layout: base
+title: Inheritance
+---
+
+<h1>Inheritance</h1>
+
+<p>
+	Inheritance is an object oriented technique that allows you to re-use code across related objects in your applications.
+</p>
+
+<p>
+	Imagine you have an application that contains both teachers and students. 
+	In a very simplified application our teacher and student may look something like this:
+</p>
+
+<p>
+	A teacher has a name and a set of students.
+</p>
+
+<p>
+	<img alt='Teacher UML diagram' src='assets/images/9F259D201A15387CA6A44C16F53F5794.png'>
+</p>
+
+<p>
+	A student has a name and a set of grades.
+</p>
+
+<p>
+	<img alt='Student UML diagram' src='assets/images/FAFDAA78E1EFB2BFD118DF8C4A9B84BE.png'>
+</p>
+
+<p>
+	We can see that both Teachers and Students have setName() and getName() functions. 
+	The code for these functions are identical in both components so it would be good if the code could be shared.
+</p>
+
+<p>
+	With inheritance we move shared code into a separate component. 
+	In this example we can create a Person object that contains the shared setName() and getName() code:
+</p>
+
+<p>
+	<img alt='Person UML diagram' src='assets/images/21FD091B0A2F49AE94275A17889F4A7E.png'>
+</p>
+
+<p>
+	Now we need to indicate that the Teacher and Student components are particular kinds of &quot;extensions&quot; of the Person component.
+</p>
+
+<p>
+	In CFML we use the &quot;extends&quot; keyword on the component tag.
+</p>
+
+
+
+{% highlight cfm %}
+<!--- Person.cfc --->
+<cfcomponent name="Person">
+    ...
+</cfcomponent> 
+
+<!--- Student.cfc --->
+<cfcomponent name="Student" extends="Person">
+    ...
+</cfcomponent> 
+
+<!--- Teacher.cfc --->
+<cfcomponent name="Teacher" extends="Person">
+    ...
+</cfcomponent> 
+{% endhighlight %}
+
+<p>
+	In UML this is represented as:
+</p>
+
+<p>
+	<img alt='Person Student Teacher UML diagram' src='assets/images/25C1D4AFD43E1356EF337AE47A2E2226.png'>
+</p>
+
+<p>
+	The UML diagram here shows empty arrow heads, which indicate &quot;inherits from&quot;. 
+	So we can say that Teacher inherits from Person and Student inherits from Person.
+</p>
+
+<p>
+	In CFML nomenclature, the Person component is referred to as the &quot;parent-component&quot; 
+	or &quot;super-component&quot;. The Teacher and Student are the &quot;sub-components&quot;
+</p>
+
+<p>
+	With inheritance, the subcomponents automatically get a copy of any functions in their parent components. 
+	With this approach we can write code such as:
+</p>
+
+
+{% highlight cfm %}
+<cfset teacher = createObject("component","Teacher")>
+<cfset teacher.setName("Spock")>
+<cfoutput>
+    #teacher.getName()#
+</cfoutput>
+{% endhighlight %}
+
+
+
+<p>
+	Inheritance can extend as deep as required. For example if we needed to introduce a new HeadTeacher into the system, 
+	then the HeadTeacher could extend the Teacher component.
+</p>
+
+<p>
+	<img alt='Person Teacher and HeadTeacher UML diagram' src='assets/images/9F92559E4D1453CC1FDD2883A5C56A37.png'>
+</p>
+
+<p>
+	The CFML code for our head teacher would look like:
+</p>
+
+
+{% highlight cfm %}
+<!--- HeadTeacher.cfc --->
+<cfcomponent name="HeadTeacher" extends="Teacher">
+    ...
+</cfcomponent> 
+{% endhighlight %}
+
+
+
+<p>
+	Each HeadTeacher object would have its own getStaff() function, but would also inherit the getStudents() 
+	function from Teacher and the getName() and setName() functions from Person.
+</p>
+
+<h2>Inheritance is more than just code sharing</h2>
+
+<p>
+	Inheritance provides a mechanism for sharing code across components, 
+	but it also has a special meaning in object oriented design and should typically not be used as a widespread code sharing technique.
+</p>
+
+<p>
+	<strong>Inheritance implies specialisation</strong>
+</p>
+
+<p>
+	This means that when you are travelling <i>down</i> the inheritance hierarchy, 
+	each component further down should be a more &quot;specialised&quot; version of the one before it:
+</p>
+
+<ul>
+<li>Teacher is a more <i>specialised</i> version of Person</li>
+<li>Student is a more <i>specialised</i> version of Person</li>
+<li>HeadTeacher is a more <i>specialised</i> version of Teacher</li>
+</ul>
+
+
+<p>
+	Conversely, as you travel <i>up</i> the inheritance hierarchy, 
+	each component further up should be a more &quot;generalised&quot; version of the one before it:
+</p>
+
+<ul>
+<li>Teacher is a more <i>generalised</i> version of HeadTeacher</li>
+<li>Person is a more <i>generalised</i> version of Teacher</li>
+<li>Person is a more <i>generalised</i> version of Student</li>
+</ul>
+
+<h2>Inheritance is an &quot;IS A&quot; relationship</h2>
+
+<p>
+	There is a simple way to test if you have proper inheritance; 
+	you should always be able to say that your sub-component <i>IS A</i> super-component.
+</p>
+
+<p>
+	Looking at our example we can say:
+</p>
+
+<ul>
+<li>Teacher <i>IS A</i> Person</li>
+<li>Student <i>IS A</i> Person</li>
+<li>HeadTeacher <i>IS A</i> Teacher</li>
+</ul>
+
+
+<h2>Example of bad inheritance</h2>
+
+<p>
+	Suppose you have an object that calculates prices including tax for you.
+</p>
+
+<p>
+	<img alt='TaxCalculator UML Diagram' src='assets/images/EAD70CB366C4EE7C4D45CDD40E316FCD.png'>
+</p>
+
+<p>
+	Then elsewhere in your application you have a Product object that needs to use this calculation function.
+</p>
+
+<p>
+	It would be incorrect usage of inheritance to have your Product inherit from the TaxCalculator.
+</p>
+
+<p>
+	<img alt='UML Example of Bad Inheritance' src='assets/images/D1AECC9AD091DE6525EE3122D415E5CC.png'>
+</p>
+
+<p>
+	Applying our <i>IS A</i> test to these components:
+</p>
+
+<blockquote>&quot;Product <i>IS A</i> TaxCalculator&quot;</blockquote>
+
+<p>
+	Not really. Our product needs to <i>use</i> a tax calculator, but is it not a calculator itself.
+</p>
+
+<p>
+	In cases such as these there are other techniques for sharing code across components such as composition which we will discuss shortly.
+</p>
+
+<h2>Guidelines for good inheritance implementations</h2>
+
+<h3>Keep lightweight parent-components</h3>
+
+<p>
+	Components higher up in the inheritance hierarchy should be kept as &quot;lightweight&quot; as possible. 
+	This keeps their meaning very specific and single purposed.
+</p>
+
+<p>
+	If a parent component has many functions then a sub-component may inherit functions it doesn't need. 
+	If this happens it could be a sign that:
+</p>
+
+<ol>
+<li>the parent component is doing too much, or</li>
+<li>the sub-component is not really a specialisation of the parent and should not inherit from it.</li>
+</ol>
+
+<h3>Keep a strong relationship with parent-components</h3>
+
+<p>
+	Your sub-components should have a strong relationship with the parent component. 
+	This is related to the previous guideline in that all of the parent functions 
+	should be directly relevant and useful to the sub-component.
+</p>
+
+<h3>Avoid sub-component combinations</h3>
+
+<p>
+	Suppose you have a component Ball, and you create three sub-components BouncingBall, FlashingBall and SpinningBall. 
+	You then find that you need balls that are combinations of the other three sub-components; 
+	a BouncingFlashingBall, a BouncingSpinningBall, a FlashingSpinningBall and a BouncingFlashingSpinningBall.
+</p>
+
+<p>
+	<img alt='Sub-component Combination UML Diagram' src='assets/images/9B942EE4AC2A1828BA686D25934C1BF0.png'>
+</p>
+
+<p>
+	This leads to a very messy implementation particularly as each new Ball sub-component is created.
+</p>
+
+<p>
+	In cases such as these, where you appear to need multiple combinations of sub-components then inheritance 
+	is not the best choice. It is better to use an alternative technique such a 
+	<a href="http://en.wikipedia.org/wiki/Decorator_pattern">Decorator design pattern</a> rather than inheritance.
+</p>
+
