@@ -1,0 +1,231 @@
+---
+layout: base
+title: Object Oriented Terminology
+---
+
+<h1>Object Oriented Terminology</h1>
+
+<p>
+	Within CFML the object oriented terminology used is slightly different 
+	from that used in other object oriented languages. When learning object oriented concepts it is very useful to keep these terms in mind as they will be used in most texts outside of CFML.
+</p>
+
+<p>
+	Let's summarise some common OO terms and relate them to CFML. 
+</p>
+
+<h2>Class</h2>
+
+<p>
+	A <i>class</i> in common OO is equivalent to a <i>component</i> in CFML.
+</p>
+
+<p>
+	If you were asked to write a class that represents a Cat then you would create a <i>Cat.cfc</i> 
+	file to represent that class.
+</p>
+
+<p>
+	Class Cat:
+</p>
+
+
+{% highlight cfm %}
+<cfcomponent name="Cat" output="false">
+
+</cfcomponent>
+{% endhighlight %}
+
+
+
+<h2>Method</h2>
+
+<p>
+	A <i>method</i> in common OO is equivalent to a <i>function</i> in CFML. 
+	More specifically it is equivalent to a function within a component. 
+</p>
+
+<p>
+	If you were to write a class called Cat with a method feed(food) then you would create a <i>Cat.cfc</i> 
+	component and write a function named <i>feed</i> with one argument named <i>food</i>.
+</p>
+
+<p>
+	Class Cat with method feed():
+</p>
+
+
+{% highlight cfm %}
+<cfcomponent name="Cat" output="false">
+
+    <cffunction name="feed" output="false">
+        <cfargument name="food">
+        <!--- ... do something ... --->
+    </cffunction> 
+
+</cfcomponent>
+{% endhighlight %}
+
+
+
+<h2>Message</h2>
+
+<p>
+	Sometimes in common OO, methods (i.e. CFML functions) are referred to as a <i>messages</i>
+	and calling methods is referred to as <i>passing messages</i>
+</p>
+
+<p>
+	The following phrases are essentially equivalent:
+</p>
+
+<ul>
+<li>&quot;execute a function&quot;</li>
+<li>&quot;call a method&quot;</li>
+<li>&quot;pass a message&quot;</li></ul>
+
+<p>
+	For example, if you have an object based on the <i>Cat</i> component above then 
+	you could say &quot;pass the <i>feed</i> message to your <i>cat</i> object&quot;. 
+</p>
+
+<h2>Parameter</h2>
+
+<p>
+	A <i>parameter</i> in common OO is equivalent to an <i>argument</i> for a CFML function.
+</p>
+
+<p>
+	Our cat component above has a function called <i>feed</i> with a single argument named <i>food</i>.
+</p>
+
+<p>
+	In common OO we would say that our Cat <i>class</i> has a <i>method</i> feed with one <i>parameter</i> named food.
+</p>
+
+<h2>Constructor</h2>
+
+<p>
+	The constructor is a method that runs when an object is first created. 
+	It's purpose is to set an object into it's initial state.
+</p>
+
+<p>
+	In CFML the conventional equivalent is though using an 
+	<a href="init-function.html">init() function</a>. 
+	By convention we must call this function explicitly after our objects have been created.
+</p>
+
+
+
+
+{% highlight cfm %}
+<cfcomponent output="false">
+
+    <cffunction name="init" output="false">
+        <!--- Constructor code goes here --->
+        <cfset variables.position = 1>
+        <cfset variables.values = [10,9,8,7,6,5,4,3,2,1]>
+        <cfreturn this>
+    </cffunction>
+
+</cfcomponent>
+{% endhighlight %}
+
+
+
+
+<p>
+	However, in common OO constructors are not explicitly called, 
+	they are automatically called when the object is created. 
+	In CFML this is achieved though a component's <i>pseudo constructor</i>. 
+	The pseudo constructor is simply code that is within a component, 
+	typically at the top, and is not inside any function.
+</p>
+
+
+
+{% highlight cfm %}
+<cfcomponent output="false">
+
+    <!--- Pseudo constructor code goes here --->
+    <cfset variables.position = 1>
+    <cfset variables.values = [10,9,8,7,6,5,4,3,2,1]>
+
+    <cffunction name="init" output="false">
+        <cfreturn this>
+    </cffunction>
+
+</cfcomponent>
+{% endhighlight %}
+
+
+<p>
+	The pseudo constructor is conventionally used to declare variables required for the component 
+	(and hence documenting the <i>class variables</i>). 
+	The init() method is conventionally used to initialise those variables when the object is created.
+</p>
+
+<h2>Inheritance terminology</h2>
+
+<p>
+	There are various terms related to inheritance in common OO. 
+	For this section lets assume we have two components, Animal.cfc and Cat.cfc where the 
+	Cat component extends the Animal component.
+</p>
+
+<p>
+	<img alt='Animal Cat inheritance' src='assets/images/81F6890648DF5A4ED3EB03E1CAAB768D.png'>
+</p>
+
+<h3>Inherits from</h3>
+
+<p>
+	When our component &quot;Cat.cfc&quot; <i>extends</i> another component &quot;Animal.cfc&quot;, 
+	this is equivalent to saying that Cat <i>inherits from</i> Animal.
+</p>
+
+<h3>Superclass or Parent class</h3>
+
+<p>
+	The <i>superclass</i> or <i>parent class</i> in this relationship is the Animal class. 
+	It represents the class that is further <i>up</i> the class hierarchy.
+</p>
+
+<p>
+	In CFML it would be reasonable to substitute the word <i>class</i> with the word <i>component</i>, 
+	which would give us <i>super-component</i> or <i>parent-component</i>.  
+</p>
+
+<p>
+	Sometimes a superclass is also known as a &quot;Generalisation&quot; or a &quot;Base class&quot;.
+</p>
+
+<p>
+	It is worth noting that in some texts a Base class refers to the &quot;top most&quot; 
+	object in an inheritance hierarchy, while in others it just refers to a superclass.
+</p>
+
+<h3>Subclass or Child class</h3>
+
+<p>
+	The <i>subclass</i> or <i>child class</i> in this relationship is the Cat class. 
+	It represents the class that is further <i>down</i> the class hierarchy.
+</p>
+
+<p>
+	Again, in CFML it would be reasonable to substitute the word <i>class</i> with the word <i>component</i>, 
+	which would give us <i>sub-component</i> or <i>child-component</i>.  
+</p>
+
+<p>
+	Sometimes a subclass is also known as a &quot;Specialisation&quot; or a &quot;Derived class&quot;.
+</p>
+
+<h2>From here</h2>
+
+<p>	
+	With some terminology up our sleeve, let's take a look at <a href="inheritance.html">Inhertance</a>
+</p>
+
+
