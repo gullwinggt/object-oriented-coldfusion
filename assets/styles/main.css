@@ -42,6 +42,11 @@ header nav li {
 
 header nav a {
 	color: #b22;
+}
+
+/*
+header nav a {
+	color: #b22;
 	padding-left: 1em;
 }
 
@@ -49,6 +54,8 @@ header nav li:first-child a {
 	border-right: 2px solid #ccc;
 	padding-right: 1em;
 }
+*/
+
 
 /*******************************************
 *
