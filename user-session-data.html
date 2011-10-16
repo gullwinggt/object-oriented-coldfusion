@@ -1,0 +1,313 @@
+---
+layout: base
+title: Accessing a Users' Session Data
+---
+
+<h1>Accessing a Users' Session Data</h1>
+
+<p>
+	The session scope is ideal for storing information about the current user of an application. 
+	For many applications, whenever we need to store this kind of information we just store it 
+	directly in a session variable:
+</p>
+
+<ul>
+<li>session.userId - the user's Id</li>
+<li>session.roles - list of roles the user is fulfilling</li>
+<li>session.permissions - struct of permissions for the user</li>
+<li>session.lastSearchResult - query with the results of a recent search</li>
+<li>etc.</li>
+</ul>
+
+<p>
+	Sometimes, this data is wrapped up in a &quot;user&quot; struct and stored in the session:
+</p>
+
+<ul>
+<li>session.user.userId</li>
+<li>session.user.roles</li>
+<li>session.user.permissions</li>
+<li>session.user.lastSearchResult</li>
+<li>etc.</li>
+</ul>
+
+<p>
+	Session data is available globally which means that any page, custom tag or component can immediately access it. 
+	This provides a great convenience as the data is very simple to access; if you need the current user's id just 
+	grab session.user.userId.
+</p>
+
+<p>
+	However as the number of session variables increases and the number of pages that access them grows this data can 
+	become very difficult to manage. We may have so many session variables that the purpose of some of them is difficult 
+	to determine. We may need to make some changes to the structure of some of these variables. 
+	For example, a variable may need to be renamed due to a change in the system design, another variable needs to be 
+	changed from a list to a struct, another variable may have become obsolete and needs to be removed. 
+	These types of changes can be quite complex to make due to their widespread global nature. 
+	In even medium size systems changes such as there are often so difficult that they cannot be performed.
+</p>
+
+<p>
+	There are some object oriented concepts that can assist in making these types of problems more manageable.
+</p>
+
+<h2>Creating our User object</h2>
+
+<p>
+	Our first step is to create a User object that will contain all of the data we need.
+</p>
+
+<p>
+	<img alt='Simple User UML Diagram' src='assets/images/2E5F38D3595DDCBC0A7F2FDCC13FFEFE.png'>
+</p>
+
+<p>
+	<i>
+		As a side note, it is very important that this user object strictly represents the current 
+		user and should not contain any functions that are not specifically about the current user. 
+		For example, this user object must not have any functions such as getUserById(userId) 
+		or getUserRoles(userId) which are operations to find information about other users. 
+		These types of functions belong in other objects.
+	</i>
+</p>
+
+<p>
+	Our user object will sit in the session scope, as usual:
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cfset session.user = ... user creation code here ...>
+{% endhighlight %}
+
+
+
+
+<h2>Directly accessing the session is not permitted</h2>
+
+<p>
+	Directly accessing <i>session.user</i> from any page or component that needs to use the current user is not permitted. 
+</p>
+
+<p>
+	This is key to improving the design of the existing code. 
+	Rather than accessing the session directly from our application 
+	code we need an object that will perform this task for us.
+</p>
+
+
+
+<h2>Creating our UserService</h2>
+
+<p>
+	A UserService object is a very &quot;big picture&quot; object that performs 
+	a variety of user related tasks. For now, let's consider that its only purpose 
+	is to help us gain access to the session.user object. 
+</p>
+
+<p>
+	Typically a UserService object will be created once on application startup 
+	and will be placed in the application scope.
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cfset application.userService = createObject("component","UserService").init()>
+{% endhighlight %}
+
+
+
+
+
+<h2>Accessing our current user</h2>
+
+<p>
+	From your application's perspective, session.user represents the &quot;current user&quot;, 
+	so no matter what page you are on session.user always contains this &quot;current user&quot;.
+</p>
+
+<p>
+	Let's add two functions to the UserService:
+</p>
+
+<ol>
+<li>setCurrentUser(user) which sets the &quot;current&quot; user</li>
+<li>getCurrentUser() which returns our user object</li>
+</ol>
+
+<p>
+	<img alt='UserService UML diagram' src='assets/images/AF37C901F1D6E89568C3D9B2C9F9A4D6.png'>
+</p>
+
+<p>
+	And in code:
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cfcomponent name="UserService">
+
+    <cffunction name="init" output="false">
+        <cfreturn this>
+    </cffunction>
+
+    <cffunction name="setCurrentUser" output="false">
+        <cfargument name="user" required="true">
+        <cfset session.user = arguments.user>
+    </cffunction>
+
+    <cffunction name="getCurrentUser" output="false">
+        <cfreturn session.user>
+    </cffunction>
+
+</cfcomponent>
+{% endhighlight %}
+
+
+
+
+
+<p>
+	In the rest of our application to access the current user we would write something like this:
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cfset user = application.userService.getCurrentUser()>
+
+<cfif user.isAuthorisedTo("deleteUsers")>
+    ...
+</cfif>
+{% endhighlight %}
+
+
+
+
+
+<p>
+	So we have created a very simple mechanism to access our current user 
+	without directly referring to the session scope. Every piece of code in the system needs 
+	to go through the application.userService to find the current user.
+</p>
+
+
+
+
+
+<h2>Impact of this change</h2>
+
+<p>
+	This relatively simple change isolates your application from many difficulties 
+	that can arise from using the session scope directly. 
+	Let's consider some of the implications of this change:
+</p>
+
+
+
+<h3>User data is now accessed through functions</h3>
+
+<p>
+	The user's data is now accessed through functions on the user object directly. Rather than using:
+</p>
+
+
+
+{% highlight cfm %}
+<cfset canDelete = session.user.permissions["deleteUsers"]>
+{% endhighlight %}
+
+
+
+<p>
+	We now use:
+</p>
+
+
+
+
+
+{% highlight cfm %}
+<cfset user = application.userService.getCurrentUser()>
+<cfset canDelete = user.isAuthorisedTo("deleteUsers")>
+{% endhighlight %}
+
+
+
+
+<p>
+	If we need to change the permission structure to be a query rather than a struct, 
+	for example, then the second scenario shields the rest of the application from this kind of change.
+</p>
+
+
+
+
+<h3>The User object provides improved organisation</h3>
+
+<p>
+	Previously the session data was stored as just a bunch of variables all 
+	floating together in the session scope. By placing this data behind functions in the user 
+	object it now has more organised meaning. The function names provide an &quot;api&quot; to our session data.
+</p>
+
+
+
+<h3>Session access is isolated to one function</h3>
+
+<p>
+	Only the userService.getCurrentUser() function accesses the session scope directly. 
+	This shields the rest of the application from any changes to how the user is stored in the session. 
+	For example, if the session.user variable needed to be renamed for any reason, 
+	or if the current user details were moved out of the session scope and into a database 
+	(to support the application without sessions), 
+	the application code would continue to call getCurrentUser() with no further impact.
+</p>
+
+
+
+<h2>Other considerations</h2>
+
+<p>
+	There are other benefits to small changes such as these which include simplifying the testing of your code. 
+	The session data is now actually stored inside an object which <i>does not need to be in the session</i>. 
+	It can be created and tested as a standalone object. The fact that we choose to store it in the session is incidental.
+</p>
+
+<p>
+	For some, session data may be <a href="http://www.google.com/search?q=coldfusion+session+facade">accessed via a separate component</a> 
+	which is often called a 'Session Facade', although this is not strictly a facade. 
+	This can provide an additional layer of protection for your session data.
+</p>
+
+<p>
+	Lastly, the examples above access the UserService from the application scope directly. 
+	This is also global variable access that would typically be discouraged, however <i>encapsulating</i> 
+	your user's session data first is perhaps a more useful immediate step for your applications.  
+</p>
+
+<h2>Conclusion</h2>
+
+<p>
+	Accessing the session scope directly is very convenient, but access to global data in this way can 
+	become very difficult to manage over time. Session data should be stored in an object to improve 
+	the meaning and organisation of the data, and access to the session itself should be hidden behind 
+	another object to allow the session access itself to be changed without affecting the rest of the application.
+</p>
+
+
