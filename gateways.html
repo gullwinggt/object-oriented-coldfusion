@@ -1,0 +1,875 @@
+---
+layout: base
+title: Introduction to Gateways and Database Access
+---
+
+<h1>Introduction to Gateways and Database Access</h1>
+
+<p>
+	CFML provides a very simple syntax for accessing a database which in turn can easily 
+	lead to database interaction in any file throughout your application. 
+	Let's cover some guidelines on how you might structure your code using an object oriented approach.
+</p>
+
+<h2>Introducing a Gateway</h2>
+
+<p>
+	The term &quot;Gateway&quot; is the name of a well known <a href="http://martinfowler.com/eaaCatalog/gateway.html">design pattern</a>. 
+	This pattern describes an object whose purpose is to encapsulates access to an external system or resource. 
+	In our case the external resource is a relational database.
+</p>
+
+<p>
+	There are a number of other design patterns that cover a variety of database access techniques, 
+	but for simplicity and it's appropriateness within CFML we will simply use the term Gateway 
+	to mean an object that communicates with a database. Our Gateways effectively represent a layer 
+	above the database and are the only doorway to accessing its data.
+</p>
+
+<p>
+	Let's take a look at a simple Gateway object:
+</p>
+
+<p>
+	<img alt='UserGateway UML diagram' src='assets/images/A38F7482A0D02CB45BEE93615A6A2AEA.png'>
+</p>
+
+<p>
+	To use this Gateway you may write code such as:
+</p>
+
+
+
+
+
+
+
+{% highlight cfm %}
+<!--- Create your gateway --->
+<cfset userGateway = ... code to create the gateway ...>
+
+<!--- Create a user ... oops a typo there --->
+<cfset userId = userGateway.createUser("Alduos","Huxley")>
+
+<!--- Perform an update and fix the typo --->
+<cfset userGateway.updateUser(userId,"Aldous","Huxley")>
+
+<!--- Delete the user --->
+<cfset userGateway.deleteUserById(userId)>
+
+<!--- Find any others users with the name "Huxley" --->
+<cfset users = userGateway.findUsersBySearchTerm("huxley")>
+{% endhighlight %}
+
+
+
+
+
+<h2>Gateways and Datasources</h2>
+
+<p>
+	Considering that Gateways are our doorway to a database, 
+	they will need to know about the datasource defined within the ColdFusion Administrator.
+</p>
+
+<p>
+	In many typical CFML applications the datasource details are stored in the 
+	application scope and used wherever required:
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cfquery 
+    name="userQuery" 
+    datasource="#application.dsName#"
+    username="#application.dsUser#"
+    password="#application.dsPass#">
+    ... SQL here ... 
+</cfquery>
+{% endhighlight %}
+
+
+
+
+
+<p>
+	However this technique of accessing the global application scope directly can lead to 
+	<a href="procedural-vs-object-orientedprogramming">code that is difficult to change</a>. 
+	A better technique is to provide the Datasource details to the Gateway objects when they are created. 
+</p>
+
+<p>
+	Firstly, let's create a Datasource object that will contain our datasource details:
+</p>
+
+<p>
+	<img alt='Datasource UML diagram' src='assets/images/FB57B1EB3131F4D34707C1C0DBE7BF36.png'>
+</p>
+
+<p>
+	The name(), username() and password() functions simply return the name, username and password of the datasource.
+</p>
+
+<p>
+	Our Datasource component may be written as follows:
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cfcomponent output="false">
+
+    <!--- PRIVATE VARIABLES --->
+
+    <cfset variables.instance = {}>
+    <cfset variables.instance.name = "">
+    <cfset variables.instance.username = "">
+    <cfset variables.instance.password = "">
+
+    <!--- INITIALISATION --->
+
+    <cffunction name="init" output="false">
+        <cfargument name="name" required="true">
+        <cfargument name="username" required="true">
+        <cfargument name="password" required="true">
+        <cfset variables.instance.name = arguments.name>
+        <cfset variables.instance.username = arguments.username>
+        <cfset variables.instance.password = arguments.password>
+    </cffunction>
+
+    <!--- PUBLIC FUNCTIONS --->
+
+    <cffunction name="name" output="false">
+        <cfreturn variables.instance.name>
+    </cffunction>
+
+    <cffunction name="username" output="false">
+        <cfreturn variables.instance.username>
+    </cffunction>
+
+    <cffunction name="password" output="false">
+        <cfreturn variables.instance.password>
+    </cffunction>
+
+</cfcomponent>
+{% endhighlight %}
+
+
+
+
+
+
+<p>
+	Once we have created a Datasource object then we can provide this object to all of our Gateway objects. For example:
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<!--- Create our datasource --->
+<cfset datasource = createObject("component","com.util.Datasource").init("recipeshop","recipeshop_dbo","abc123")>
+
+<!--- Create some databases and provide the datasource object --->
+<cfset userGateway = createObject("component","com.user.UserGateway").init(datasource)> 
+<cfset recipeGateway = createObject("component","com.recipe.RecipeGateway").init(datasource)> 
+{% endhighlight %}
+
+
+
+
+
+<p>
+	So here we first create a datasource object and provide the datasource details to its init() function. 
+	Next we create the Gateway objects a provide this Datasource object to their init() functions.
+</p>
+
+<p>
+	This technique of passing the datasource into the gateway is a form of 
+	<a href="dependency-injection.html">dependency injection</a>.
+</p>
+
+<p>
+	So what exactly is the responsibility of a Gateway object. Let's cover some guidelines for Gateway design.
+</p>
+
+<h2>Gateway design guidelines</h2>
+
+<p>
+	We can start with some general guidelines for developing Gateways in your application:
+</p>
+
+<ol>
+<li>Gateways are the only objects in your application that may contain SQL code.</li>
+<li>Gateways do not know about objects, they simply execute SQL and optionally return query recordsets.</li>
+<li>You should create a separate gateway for each &quot;logical section&quot; of your application.</li>
+<li>Gateways are &quot;singletons&quot; and can be created once on application startup.</li>
+<li>Gateways do not perform transactions</li>
+</ol>
+
+<p>
+	Let's cover each of these in turn:
+</p>
+
+<h3>Gateways are responsible for all SQL</h3>
+
+<p>
+	As a general rule, if you need to write some SQL then it should be in a Gateway. 
+	This makes any SQL much easier to manage because it is all contained in a single object. 
+	This also helps to minimise queries being duplicated throughout your code.
+</p>
+
+<h3>Gateways don't deal with objects</h3>
+
+<p>
+	Good object design tries to keep the purpose of objects very narrow; 
+	they should not try to do a wide scope of things. In the case of Gateways, 
+	they have the very specific role of performing queries, and that's all. 
+	This means that objects are neither passed into or out of the Gateway functions.
+</p>
+
+<h3>Gateways represent logical function groupings</h3>
+
+<p>
+	When creating Gateways they should be designed and named based on their &quot;logical&quot; purpose. 
+	For example, it is better to have a &quot;UserGateway&quot; and a &quot;ProductGateway&quot; rather 
+	than an &quot;AdminGateway&quot; and &quot;PublicGateway&quot;. 
+	This means that the UserGateway, for example, provides both admin and public functions grouped together.
+</p>
+
+<h3>Gateways are singletons</h3>
+
+<p>
+	A singleton is an object that only has one &quot;instance&quot; in an application. 
+	It is created once on applcation startup and stored in the application scope. 
+	Gateways are good candidates for singletons:
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cffunction name="onApplicationStartup" output="false">
+    <cfset var datasource = createObject("component","com.util.Datasource").init("recipeshop","recipeshop_dbo","abc123")>
+    <cfset var userGateway = createObject("component","com.user.UserGateway").init(datasource)> 
+    <cfset application.userGateway = userGateway>
+</cffunction>
+{% endhighlight %}
+
+
+
+
+
+<h3>Gateways do not perform transactions</h3>
+
+<p>
+	The &lt;cftransaction&gt; tag should not be used within Gateways. 
+	As Gateways are performing the individual queries, it is up to the calling code to manage any transactional requirements 
+	surrounding multiple Gateway function calls.
+</p>
+
+
+<h2>Implementing a Gateway</h2>
+
+<p>
+	Let's implement the beginnings of a simple UserGateway object.
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cfcomponent output="false">
+
+    <!--- PRIVATE VARIABLES --->
+
+    <cfset variables.instance = {}>
+    <cfset variables.instance.datasource = 0>
+
+    <!--- INITIALISATION --->
+
+   <cffunction name="init" output="false">
+        <cfargument name="datasource" required="true">
+        <cfset variables.instance.datasource = arguments.datasource>
+    </cffunction>
+
+    <!--- PUBLIC FUNCTIONS --->
+
+    <cffunction name="findUserById" output="false">
+        <cfargument name="userId" required="true">
+        <cfset var userQuery = 0>
+        <cfquery
+            name="userQuery" 
+            datasource="#variables.datasource.name()#"
+            username="#variables.datasource.username()#"
+            password="#variables.datasource.password()#">
+            select
+                userId,
+                firstName,
+                lastName,
+            from
+                user
+            where
+                userId = <cfqueryparam type="CF_SQL_INTEGER" value="#val(arguments.userId)#">
+        </cfquery>
+        <cfreturn userQuery>
+    </cffunction>
+
+    <cffunction name="createUser" output="false">
+        <cfargument name="firstName" required="true">
+        <cfargument name="lastName" required="true">
+        <cfset var userResult = 0>
+        <cfquery
+            result="userResult" 
+            datasource="#variables.datasource.name()#"
+            username="#variables.datasource.username()#"
+            password="#variables.datasource.password()#">
+            insert into user
+            (
+                firstName,
+                lastName,
+            )
+            values
+            (
+                <cfqueryparam type="CF_SQL_VARCHAR" value="#arguments.firstName#">,
+                <cfqueryparam type="CF_SQL_VARCHAR" value="#arguments.lastName#">
+            )
+        </cfquery>
+        <cfreturn userResult.IDENTITYCOL> <!--- MSSQL auto generated Id value --->
+    </cffunction>
+
+    <cffunction name="deleteUserById" output="false">
+        <cfargument name="userId" required="true">
+        <cfquery
+            datasource="#variables.datasource.name()#"
+            username="#variables.datasource.username()#"
+            password="#variables.datasource.password()#">
+            delete from user
+            where
+                userId = <cfqueryparam type="CF_SQL_INTEGER" value="#val(arguments.userId)#">
+        </cfquery>
+    </cffunction>
+
+</cfcomponent>
+{% endhighlight %}
+
+
+
+
+
+<p>
+	We might use this Gateway as follows:
+</p>
+
+
+
+
+
+
+
+{% highlight cfm %}
+<!--- Create our gateway --->
+<cfset datasource = createObject("component","com.util.Datasource").init("recipeshop","recipeshop_dbo","abc123")>
+<cfset userGateway = createObject("component","com.user.UserGateway").init(datasource)> 
+
+<!--- Create a struct containing all of the user data --->
+<cfset user = {}>
+<cfset user.firstName = "Samwise">
+<cfset user.lastName = "Gamgee">
+
+<!--- Create the new user, passing the user struct as arguments --->
+<cfset userId = userGateway.createUser(argumentCollection=user)>
+{% endhighlight %}
+
+
+
+
+
+<h2>Gateway function names</h2>
+
+<p>
+	It is a good idea to ensure that your function names are not too short. 
+	For example, avoid names such as create() or delete(). 
+	It is better to have more explicit names such as createUser() or deleteUserById(). 
+	This will better serve future needs such as if you needed to add functions such as createGuestUser() or deleteUserByUsername(). 
+</p>
+
+
+
+
+<h2>Which Gateway should your code go in?</h2>
+
+<p>
+	There are times where is may not be clear which Gateway object your query needs to go in. 
+	For example, suppose you have a system for managing user submitted recipes. 
+	You may have a UserGateway for user related queries and a RecipeGateway for recipe related queries. 
+	However, if you need to produce a listing that contained both Users and Recipes then where should your query go? 
+	And perhaps the recipes also belong to Categories, which are managed via a Category gateway, also needed to be included in the listing.
+</p>
+
+<p>
+	There are various options but if the <i>intent</i> of the query is well understood it helps us to 
+	decide which gateway the query should go in. In this example the <i>intent</i> is about displaying recipes, 
+	whether it be by user or category, so this query is most likely suited for the RecipeGateway. 
+</p>
+
+<p>
+	If the <i>intent</i> genuinely belongs in more than one area, then create a new Gateway specifically 
+	for that grouping; a UserRecipeGateway. If you need one query in this grouped gateway then it's 
+	likely you will need more here.
+</p>
+
+
+<h2>Handling dates, times and special UI fields</h2>
+
+<p>
+	It is common for us to collect dates, times or other special kinds of user interface elements 
+	in a form and pass these down for saving to a database. When we get to the Gateway level we 
+	do not want to expose our gateway to any details about our form. The important goal here is 
+	that if our form is changed then it must not have any impact on our Gateway.
+</p>
+
+<p>
+	For example, suppose we collect a date in a form field in MM/DD/YYYY format. We must convert this 
+	to a date/time object <i>before</i> it is passed into the Gateway. The Gateway then only needs to 
+	deal with a date object, and does not perform any string parsing. If we then change the format of 
+	the date field to accept &quot;DD/MM/YYYY&quot; on the form for users in a different region then 
+	we will not have to change our Gateway.
+</p>
+
+<p>
+	Another example is with forms that contain a dynamic number of fields. For example, you may have a 
+	form that contains field names preference_1, preference_2, preference_3, and so on, where the number 
+	of preferences is different depending on the user currently logged in. In this situation the preferences 
+	should be converted to a list, a struct or an array before being provided to the Gateway. 
+	If the form field names were changed for any reason then the Gateway could remain unchanged.
+</p>
+
+<p>
+	So the important guide here is that the Gateway should never work with the URL or form scopes directly, 
+	and in particular should never perform parsing of form field data. 
+	This must be done prior to the Gateway functions being called.
+</p>
+
+
+<h2>Minimising duplication</h2>
+
+<p>
+	When performing select queries it is common that you will want to select the same (or a similar) 
+	set of columns in many queries. For example, you may have functions such as
+</p>
+
+<ul>
+<li>findUserByUsername(username)</li>
+<li>findUserById(id)</li>
+<li>findUsersBySearchTerm(term)</li>
+</ul>
+
+<p>
+	In these cases it may be convenient to create a new <i>private</i> function named 
+	findUsersByFilter() that can handle all of these types of queries. 
+	If possible this function should remain private to the Gateway and specific public functions are written that call it.
+</p>
+
+<p>
+	For example:
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cfcomponent output="false">
+
+    <!--- PRIVATE VARIABLES --->
+
+    <cfset variables.instance = {}>
+    <cfset variables.instance.datasource = 0>
+
+    <!--- INITIALISATION --->
+
+   <cffunction name="init" output="false">
+        <cfargument name="datasource" required="true">
+        <cfset variables.instance.datasource = arguments.datasource>
+    </cffunction>
+
+    <!--- PUBLIC FUNCTIONS --->
+
+    <cffunction name="findUserById" output="false">
+        <cfargument name="userId" required="true">
+        <cfset var filter = {}>
+        <cfset filter.userId = arguments.userId>
+        <cfreturn findUsersByFilter(filter)>
+    </cffunction>
+
+    <cffunction name="findUserByUsername" output="false">
+        <cfargument name="username" required="true">
+        <cfset var filter = {}>
+        <cfset filter.username = arguments.username>
+        <cfreturn findUsersByFilter(filter)>
+    </cffunction>
+
+    <cffunction name="findUserBySearchTerm" output="false">
+        <cfargument name="searchterm" required="true">
+        <cfset var filter = {}>
+        <cfset filter.searchterm = arguments.searchterm>
+        <cfreturn findUsersByFilter(filter)>
+    </cffunction>
+
+    <!--- PRIVATE FUNCTIONS --->
+
+    <cffunction name="findUsersByFilter" output="false">
+        <cfargument name="filter" required="true">
+        <cfset var usersQuery = 0>
+        <cfquery
+            name="usersQuery" 
+            datasource="#variables.datasource.name()#"
+            username="#variables.datasource.username()#"
+            password="#variables.datasource.password()#">
+            select
+                userId,
+                username,
+                firstName,
+                lastName,
+            from
+                user
+            where
+                1=1
+                <cfif structKeyExists(arguments.filter,"userId")>
+                    and userId = <cfqueryparam type="CF_SQL_INTEGER" value="#val(arguments.filter.userId)#">
+                </cfif>
+                <cfif structKeyExists(arguments.filter,"username")>
+                    and username = <cfqueryparam type="CF_SQL_VARCHAR" value="#val(arguments.filter.username)#">
+                </cfif>
+                <cfif structKeyExists(arguments.filter,"searchterm")>
+                    and
+                        (
+                            firstName like <cfqueryparam type="CF_SQL_VARCHAR" value="%#arguments.filter.searchterm#%">
+                            or
+                            lastName like <cfqueryparam type="CF_SQL_VARCHAR" value="%#arguments.filter.searchterm#%">
+                        )
+                </cfif>
+        </cfquery>
+        <cfreturn usersQuery>
+    </cffunction>
+
+</cfcomponent>
+{% endhighlight %}
+
+
+
+
+
+
+<p>
+	This can be particularly useful if you have a common set of tables that need to be joined on most queries.
+</p>
+
+<p>
+	However, be careful not to let your &quot;find by filter&quot; function become too complex or large, 
+	otherwise it may become a one thousand line monster for you to maintain. 
+	If it starts to become too complicated to understand then it is better to create new functions for 
+	the complicated queries and for you to &quot;wear&quot; the cost of the duplicate code. 
+	After all, at least the duplicate code will typically only exists in the same single component.  
+</p>
+
+
+<h2>Handling sort ordering</h2>
+
+<p>
+	It is common to need to execute queries that are identical except for the sort order. 
+	In these cases an additional parameter can be passed into the Gateway to specify the sort order required.
+</p>
+
+<p>
+	However, it is useful to minimise passing in &quot;SQL syntax&quot; 
+	ordering criteria into your Gateways. For example, suppose we have the following query:
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cffunction name="findAllUsersAndRecipes" output="false">
+    <cfargument name="orderBy" required="false" default="u.lastName">
+    <cfset var usersRecipesQuery = 0>
+    <cfquery
+        name="usersRecipesQuery" 
+        datasource="#variables.datasource.name()#"
+        username="#variables.datasource.username()#"
+        password="#variables.datasource.password()#">
+        select
+            u.userId,
+            u.firstName,
+            u.lastName,
+            r.recipeId,
+            r.recipeName
+        from
+            user u
+            inner join recipe r on u.userId = r.userId
+        order by
+           #arguments.orderBy#
+        </cfquery>
+    <cfreturn usersRecipesQuery>
+</cffunction>
+{% endhighlight %}
+
+
+
+
+
+<p>
+	When using this function we may write something like:
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<!--- Find all users and recipes, ordered by recipe name, then user first name --->  
+<cfset usersAndRecipes = recipeGateway.findAllUsersAndRecipes("r.recipeName,u.firstName")>
+{% endhighlight %}
+
+
+
+
+
+
+<p>
+	The problem with here is that the code that uses the Gateway needs to know details 
+	about the underlying query in order to provide the order by values. 
+	If the &quot;aliases&quot; of the gateway query needed to change for any reason 
+	then we would also need to change all of the calling code.
+</p>
+
+
+<p>
+	An alternative approach is to pass in keywords that represent the sortable columns. 
+	For example, it would be better to write this:
+</p>
+
+
+
+
+
+
+
+{% highlight cfm %}
+<!--- Find all users and recipes, ordered by recipe name, then user first name --->  
+<cfset usersAndRecipes = recipeGateway.findAllUsersAndRecipes("recipeName,firstName")>
+{% endhighlight %}
+
+
+
+
+<p>
+	And change our query order by statement slightly by creating a lookup 
+	struct of &quot;sortable&quot; fields and the corresponding sort values.
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cffunction name="findAllUsersAndRecipes" output="false">
+    <cfargument name="orderBy" required="false" default="lastName">
+    <cfset var usersRecipesQuery = 0>
+    <cfset var field = "">
+    <cfset var orderBySQL = "">
+    <cfset var orderByFields = {}>
+
+    <!--- Create the order by lookup --->
+    <cfset orderByFields["firstName"] = "u.firstName">
+    <cfset orderByFields["lastName"] = "u.lastName">
+    <cfset orderByFields["recipeName"] = "r.recipeName">
+
+    <!--- Create the actual order by SQL statement --->
+    <cfloop index="field" list="#arguments.orderBy#">
+        <cfif structKeyExists(orderByFields,field)>
+            <cfset orderBySQL = listAppend(orderBySQL,orderByFields[field])>
+        </cfif>
+    </cfloop>
+
+    <cfquery
+        name="usersRecipesQuery" 
+        datasource="#variables.datasource.name()#"
+        username="#variables.datasource.username()#"
+        password="#variables.datasource.password()#">
+        select
+            u.userId,
+            u.firstName,
+            u.lastName,
+            r.recipeId,
+            r.recipeName
+        from
+            user u
+            inner join recipe r on u.userId = r.userId
+
+        <!--- Only sort if an orderBy list is provided --->
+        <cfif len(orderBySQL) gt 0>
+            order by
+                #orderBySQL#
+        </cfif>
+
+    </cfquery>
+    <cfreturn usersRecipesQuery>
+</cffunction>
+{% endhighlight %}
+
+
+
+
+
+<p>
+	For simple Gateways this kind of additional work may not be required, 
+	but if there are numerous calls to a Gateway with varied order by statements, 
+	then this may be of benefit.
+</p>
+
+
+
+<h2>Accessing multiple datasources</h2>
+
+<p>
+	If you have an application that needs to access multiple databases, 
+	then this is quite easily managed by creating multiple datasource objects; one for each database.
+</p>
+
+<p>
+	If different Gateways need different datasources, then only the relevant Datasource object 
+	is provided to the Gateway's init() function.
+</p>
+
+<p>
+	If a single Gateway needs to access multiple datasources, then multiple Datasources objects 
+	are provided to the Gateways init() function.
+</p>
+
+<p>
+	For example:
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<!--- Create two datasources --->
+<cfset userDatasource = createObject("component","com.util.Datasource").init("recipeshop_users","recipeshop_users_dbo","xyz987")>
+<cfset recipeDatasource = createObject("component","com.util.Datasource").init("recipeshop_recipes","recipeshop_recipes_dbo","abc123")>
+
+<!--- Create some Gateways that use different datasources --->
+<cfset userGateway = createObject("component","com.user.UserGateway").init(userDatasource)> 
+<cfset recipeGateway = createObject("component","com.sweet.SweetGateway").init(recipeDatasource)> 
+
+<!--- Create a Gateway that needs both datasources --->
+<cfset reportGateway = createObject("component","com.report.ReportGateway").init(userDatasource,recipeDatasource)> 
+{% endhighlight %}
+
+
+
+
+
+<h2>Dynamically generated SQL</h2>
+
+<p>
+	If you have a situation where you need to dynamically generate your SQL statements. 
+	There may be complexities in your application that require complex select lists and 
+	differing table joins depending on certain criteria. This kind of work can significantly 
+	complicate your SQL statements and make your Gateway objects complicated to maintain. 
+	In cases such as these it may be better to separate out the SQL construction into a separate 
+	object to leave the actual execution of the SQL for the Gateway.
+</p>
+
+<p>
+	For example, suppose you have a very complicated reporting query that provides significantly 
+	different data depending on the currently logged in user. You can create new component 
+	<i>ReportingQueryBuilder.cfc</i> to generate this SQL for you.
+</p>
+
+<p>
+	The calling code may be written something like:
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cfset currentUser = ... get access to the currently logged in user ...>
+<cfset reportQuery = reportGateway.generateUserReportData( currentUser.userId() )>
+{% endhighlight %}
+
+
+
+
+
+<p>
+	Then in your Gateway function you silently generates the required SQL:
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cffunction name="generateUserReportData" output="false">
+    <cfargument name="userId" required="false" default="lastName">
+    <cfset var reportQuery = 0>
+    <cfset var builder = 0>
+
+    <!--- Create our SQL Builder object --->
+    <cfset builder = createObject("component","com.report.ReportQueryBuilder").init(arguments.userId)>
+
+    <cfquery
+        name="reportQuery" 
+        datasource="#variables.datasource.name()#"
+        username="#variables.datasource.username()#"
+        password="#variables.datasource.password()#">
+
+        <!--- Extract the SQL from our builder object --->
+        #preserveSingleQuotes( builder.sql() )#
+
+    </cfquery>
+    <cfreturn reportQuery>
+</cffunction>
+{% endhighlight %}
+
+
+
+
+
+<p>
+	The ReportQueryBuilder performs whatever complicated logic is required to construct the SQL 
+	and then simply passes the SQL back via its sql() function to be executed by the Gateway.
+</p>
+
+<p>
+	Keep in mind that with dynamic SQL such as this we are unable to use &lt;cfqueryparam&gt; 
+	so data type checking of any user input would be required.
+</p>
+
