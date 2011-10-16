@@ -201,7 +201,7 @@ title: Component Basics
 <h3>XHTMLise your tags</h3>
 
 <p>
-	It has become common for some developers write ColdFusion tags follow correct XHTML syntax. For example, rather than writing this:
+	Some developers write ColdFusion tags follow correct XHTML syntax. For example, rather than writing this:
 </p>
 
 {% highlight cfm %}
@@ -229,10 +229,16 @@ title: Component Basics
 </p>
 
 <p>
-	It is worth noting, however, that if you use this syntax when calling a custom tag 
+	Note that if you use this syntax when calling a custom tag 
 	then it will cause the code to be executed twice. This behaviour is by design. 
 	Read more about <a href="http://coldfusion.sys-con.com/node/41856">why the code is executed twice</a> 
 	or see the <a href="http://livedocs.adobe.com/coldfusion/8/htmldocs/help.html?content=reuseCode_7.html">ColdFusion documentation</a>.
+</p>
+
+<p>
+	Developers originally started to use this style to be consistent with XHTML documents they were creating.
+	However since the introduction of HTML5, which does not require this XHTML style,
+	applying this style to your CFML code may not be as important.
 </p>
 
 {% highlight cfm %}
