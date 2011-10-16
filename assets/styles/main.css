@@ -109,6 +109,14 @@ header nav li:first-child a {
 	padding-bottom: 0.3em;
 }
 
+.main ol {
+	padding: 1em;
+}
+
+.main ul li {
+	padding-bottom: 0.3em;
+}
+
 .main .highlight {
 	border-top: 1px solid #ddd;
 	border-bottom: 1px solid #ddd;
