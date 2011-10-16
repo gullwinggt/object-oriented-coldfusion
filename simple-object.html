@@ -1,0 +1,178 @@
+<h1>A Simple Object</h1>
+
+<p>
+	In <a href="component-basics.html">component basics</a> we introduced a component called a 
+	<b>ThresholdCounter.cfc</b>. 
+	Lets revisit our Threshold Counter now and take a look at it from an object oriented perspective:
+</p>
+
+{% highlight cfm %}
+<cfcomponent output="false">
+
+    <cfset variables.threshold = 100>
+    <cfset variables.currentTotal = 0>
+
+    <cffunction name="addAmount" output="false" returntype="void">
+        <cfargument name="amount" type="numeric" required="true">
+        <cfset variables.currentTotal = variables.currentTotal + arguments.amount>
+    </cffunction>
+
+    <cffunction name="thresholdHasBeenReached" output="false" returntype="boolean">
+        <cfset var thresholdReached = variables.currentTotal ge variables.threshold>
+        <cfreturn thresholdReached>
+    </cffunction>
+
+</cfcomponent>
+{% endhighlight %}
+
+<p>
+	This component is used to create what we will call &quot;Threshold Counter&quot; objects, 
+	whose jobs are to add up numbers and to know if a particular maximum amount (our threshold) has been reached.
+</p>
+
+<h2>Using our simple object</h2>
+
+<p>
+	Our object could be used like this:
+</p>
+
+{% highlight cfm %}
+<cfset counter = createObject("component","ThresholdCounter")>
+<cfloop index="i" from="1" to="100">
+    <cfset counter.addAmount(i)>
+    <cfif counter.thresholdHasBeenReached()>
+        <cfbreak>
+    </cfif>
+</cfloop>
+<cfoutput>
+    Threshold reached at value #i#.
+</cfoutput>
+{% endhighlight %}
+
+<p>
+	So we just add sequential numbers and stop when the threshold has been reached.
+</p>
+
+<p>
+	This object demonstrate a couple of good OO concepts:
+</p>
+
+<ul>
+<li>It has variables and functions</li>
+<li>It maintains state</li>
+<li>The functions manipulate and use the internal private data</li>
+<li>It performs the work we ask it to do</li>
+</ul>
+
+<p>
+	Let's take a quick look at each of these points
+</p>
+
+<h3>Contains both variables and functions</h3>
+
+<p>
+	Typically objects will contain both variables AND functions packaged together.
+</p>
+
+<p>
+	In our case we have two variables:
+</p>
+
+<ul>
+<li>threshold</li>
+<li>currentTotal</li>
+</ul>
+
+<p>
+	And we have two functions:
+</p>
+
+<ul>
+<li>addAmount</li>
+<li>thresholdHasBeenReached</li>
+</ul>
+
+<h3>Maintains state</h3>
+
+<p>
+	In the example code above we create the object just once, then call the 
+	<b>addAmount()</b> and <b>thresholdHasBeenReached()</b> functions many times within the loop.
+</p>
+
+<p>
+	For each call to addAmount() the <b>currentTotal</b> variable is incremented, 
+	and the state of the object is changed.
+</p>
+
+<h3>Functions modify internal private data</h3>
+
+<p>
+	Both of our variables are prefixed with &quot;variables&quot; 
+	(also known as &quot;placed in the <i>variables</i> scope&quot;). 
+	This means that they are &quot;private&quot; to the component and only 
+	functions inside the component can change them. For example, this code works fine:
+</p>
+
+{% highlight cfm %}
+<cfset counter = createObject("component","ThresholdCounter")>
+<cfset counter.addAmount(20)>
+{% endhighlight %}
+
+<p>
+	But this code, will result in an error:
+</p>
+
+{% highlight cfm %}
+<cfset counter = createObject("component","ThresholdCounter")>
+<cfset counter.currentTotal = counter.currentTotal + 1>
+{% endhighlight %}
+
+<p>
+	Our variable <b>currentTotal</b> is private and cannot be modified from outside the object.
+</p>
+
+<p>
+	The other point to note is that our <b>threshold</b> variable is also private to the object 
+	and the calling code has no knowledge of what that threshold value actually is. 
+	So this information is hidden privately inside our object.
+</p>
+
+<h3>Performs work</h3>
+
+<p>
+	We have an object called a Threshold Counter. You can imagine that this object is a 
+	new friend of yours who is helping you to add up numbers and to let you know if a 
+	threshold has been reached.
+</p>
+
+<p>
+	You say to your new friend, &quot;Add this number to your current count&quot; 
+	and your friend does that job. You then ask, &quot;Have we reached the threshold?&quot; 
+	Your friend responds with a &quot;yes&quot; or &quot;no&quot;.
+</p>
+
+<p>
+	So your friend, your object, is doing the work of adding up and checking if a threshold 
+	has been reached. You are not at all concerned with <i>how</i> your friend is keeping track of those numbers, 
+	you just trust that they are doing the job you asked them to do.
+</p>
+
+<h2>Improving Our Object with an Initialiser</h2>
+
+<p>
+	Right now our object has a hard-coded value for the threshold level. 
+	It would be nice if we could set this value when the object is initially created. 
+	This change would allow us to create ThresholdCounters that have different thresholds.
+</p>
+
+<p>
+	In the <a href="the-init-function.html">next section</a> we will discuss the <b>init()</b> 
+	function which allows us to prepare our objects before we start using them.
+</p>
+
+<h2>From here</h2>
+
+<p>
+	Let's take a look at improving out object with <a href="the-init-function.html">the init() function</a>.
+</p>
+
