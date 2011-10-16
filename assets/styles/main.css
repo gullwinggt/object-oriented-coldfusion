@@ -83,13 +83,13 @@ header nav li:first-child a {
 .main h2 {
 	font-family: 'Alike', serif;
 	font-size: 1.6em;
-	padding: 0.5em 0;
+	padding: 1.5em 0 0.5em 0;
 }
 
 .main h3 {
 	font-family: 'Alike', serif;
 	font-size: 1.3em;
-	padding: 0.5em;
+	padding: 1.5em 0 0.5em 0;
 }
 
 .main a {
@@ -97,11 +97,19 @@ header nav li:first-child a {
 }
 
 .main p {
-	padding-bottom: 1.5em;
+	padding: 1em 0;
 }
 
 .main ul li {
 	padding-bottom: 0.3em;
+}
+
+.main .highlight {
+	border-top: 1px solid #ddd;
+	border-bottom: 1px solid #ddd;
+	padding: 1.5em;
+	font-size: 0.9em;
+	line-height: 1.5em;
 }
 
 /*******************************************
