@@ -1,0 +1,119 @@
+---
+layout: base
+title: What is an Object?
+---
+
+<h1>What is an Object?</h1>
+
+<p>
+	In object oriented programming, an object represents a bundling of data and functions that use the data.
+</p>
+
+<p>
+	This is simply a description of the structure of an object, but we need to think about objects as much more 
+	than this simple bundling. We can think of objects as though they were very little living entities; 
+	they have a lifespan, they can do things, and they can communicate with each other.
+</p>
+
+<p>
+	<img src="assets/images/object-life-work-comm.gif" alt="The life and times of objects">
+</p>
+
+<h2>Objects have a lifetime</h2>
+
+<p>
+	Some objects may have a very short lifespan and perhaps only exist for the duration 
+	of a single page request. Other objects may live much longer and may exist throughout 
+	the lifetime of your application.
+</p>
+
+<p>
+	Objects that have a short lifespan are those that you create on the fly during a page request. 
+	You might use it a few times during that page request but it is discarded when the page request finishes. 
+	Objects that have a longer lifespan are those you create and store in the session or application scope. 
+	These survive for as long as session or as long as the application is running.
+</p>
+
+<p>
+	In ColdFusion code this is most easily done using the createObject() function. createObject() 
+	returns a reference to an object so we can keep it around for a while.
+</p>
+
+<pre class="code">
+<strong><span style="color:#7F0055; font-weight: bold; ">&#60;cfset</span></strong> application.importantObject = <span style="color:#7F0055; font-weight: bold; ">createObject</span>(<span style="color:#2A00FF; ">&#34;component&#34;</span>,<span style="color:#2A00FF; ">&#34;ImportantApplicationObject&#34;</span>).init()<span style="color:#7F0055; font-weight: bold; ">&#62;</span>
+</pre>
+
+<p>Because objects have a lifetime, this also means that they maintain state. The variables inside them can, and typically will, change during their lifetime. A simple example might be an application object that counts the number of visitors on a site. Whenever a new session starts up this counter is increased. When a session ends this counter is decreased.
+</p>
+<pre class="code">
+<span style="color:#3F7F5F; ">&#60;!--- Create the counter. ---&#62;</span>
+<strong><span style="color:#7F0055; font-weight: bold; ">&#60;cfset</span></strong> application.sessionCounter = <span style="color:#7F0055; font-weight: bold; ">createObject</span>(<span style="color:#2A00FF; ">&#34;component&#34;</span>,<span style="color:#2A00FF; ">&#34;SessionCounter&#34;</span>).init()<span style="color:#7F0055; font-weight: bold; ">&#62;</span>
+
+<span style="color:#3F7F5F; ">&#60;!--- Some time later when a session starts up. ---&#62;</span>
+<strong><span style="color:#7F0055; font-weight: bold; ">&#60;cfset</span></strong> application.sessionCounter.newSessionStarted()<span style="color:#7F0055; font-weight: bold; ">&#62;</span>
+
+<span style="color:#3F7F5F; ">&#60;!--- And later when the session ends. ---&#62;</span>
+<strong><span style="color:#7F0055; font-weight: bold; ">&#60;cfset</span></strong> application.sessionCounter.sessionEnded()<span style="color:#7F0055; font-weight: bold; ">&#62;</span>
+
+<span style="color:#3F7F5F; ">&#60;!--- And on another page that reports the number of current sessions. ---&#62;</span>
+<strong><span style="color:#7F0055; font-weight: bold; ">&#60;cfset</span></strong> numSessions = application.sessionCounter.getCurrentNumberOfSessions()<span style="color:#7F0055; font-weight: bold; ">&#62;</span>
+<strong><span style="color:#7F0055; font-weight: bold; ">&#60;cfoutput&#62;</span></strong>#numSessions#<strong><span style="color:#7F0055; font-weight: bold; ">&#60;/cfoutput&#62;</span></strong>
+</pre>
+
+<h2>Objects are your own personal little workers</h2>
+
+<p>
+	Once you have brought an object to life you need to tell it to do things for you. 
+	Objects don&#39;t get tired or bored and are there make you happy so they will stick 
+	around as long as you need them so you can keep on asking them to do things for you.
+</p>
+
+<p>
+	This is a fundamental idea to get; objects are there to do work for you. 
+	You need to think of them as little workers who only know how to perform very 
+	specific tasks and you can ask them to do your bidding. 
+	They are much more than a simple bundle of data or a wrapper for some functions.
+</p>
+
+<pre class="code">
+<strong><span style="color:#7F0055; font-weight: bold; ">&#60;cfset</span></strong> worker.doSomething()<span style="color:#7F0055; font-weight: bold; ">&#62;</span>
+</pre>
+
+<h2>Objects can communicate with each other</h2>
+
+<p>
+	This simply means that one object call another object&#39;s functions. 
+	When one object calls another object&#39;s function it might be to ask the object to do something, 
+	or to ask the object for some information.
+</p>
+
+<p>
+	However, objects can&#39;t just communicate with any object anywhere in the system. 
+	Objects can only communicate with other objects that it has been &#34;introduced to&#34;. 
+	This simply means that an object can only communicate with other objects that have been 
+	passed via a function call.  
+</p>
+
+<pre class="code">
+<span style="color:#3F7F5F; ">&#60;!--- Create a couple of objects ---&#62;</span>
+
+<strong><span style="color:#7F0055; font-weight: bold; ">&#60;cfset</span></strong> objectA = <span style="color:#7F0055; font-weight: bold; ">createObject</span>(<span style="color:#2A00FF; ">&#34;component&#34;</span>,<span style="color:#2A00FF; ">&#34;ObjectA&#34;</span>)<span style="color:#7F0055; font-weight: bold; ">&#62;</span>
+<strong><span style="color:#7F0055; font-weight: bold; ">&#60;cfset</span></strong> objectB = <span style="color:#7F0055; font-weight: bold; ">createObject</span>(<span style="color:#2A00FF; ">&#34;component&#34;</span>,<span style="color:#2A00FF; ">&#34;ObjectB&#34;</span>)<span style="color:#7F0055; font-weight: bold; ">&#62;</span>
+
+<span style="color:#3F7F5F; ">&#60;!--- At this point, they don&#39;t know anything about each other,
+so let&#39;s introduce them. ---&#62;</span>
+
+<strong><span style="color:#7F0055; font-weight: bold; ">&#60;cfset</span></strong> objectA.sayHelloTo(objectB)<span style="color:#7F0055; font-weight: bold; ">&#62;</span>
+
+<span style="color:#3F7F5F; ">&#60;!--- This passes a reference of object B into object A,
+so object A can now call some functions on object B. ---&#62;</span>
+</pre>
+
+<h2>From Here</h2>
+
+<p>
+	Take a look at some <a href="componentbasics.html">best practices with components</a>.
+</p>
+
+
+
