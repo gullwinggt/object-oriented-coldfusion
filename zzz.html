@@ -3,7 +3,7 @@
 <html>
 <head>
 	
-	<title>Component Basics</title>
+	<title>Introduction to Gateways and Database Access</title>
 	
 	<link rel="stylesheet" href="assets/styles/reset.css">
 	<link rel="stylesheet" href="assets/styles/main.css">
@@ -30,77 +30,160 @@
 </header>
 
 <div class="main">
-	<h1>Component Basics</h1>
+	<h1>Introduction to Gateways and Database Access</h1>
 
 <p>
-	ColdFusion Components, or CFCs, are the starting point for building object oriented systems
-	so it is important to understand what they are and how they differ from objects.
+	CFML provides a very simple syntax for accessing a database which in turn can easily 
+	lead to database interaction in any file throughout your application. 
+	Let's cover some guidelines on how you might structure your code using an object oriented approach.
 </p>
 
-<h2>What is a component?</h2>
+<h2>Introducing a Gateway</h2>
 
 <p>
-	A component is simply a text file that describes a set of variables and functions 
-	which are used as a &quot;blueprint&quot; or &quot;template&quot; for creating objects. 
-	Once you have created a component then you can use the createObject() function to create objects based on your component. 
-</p>
-
-<h2>Component file names</h2>
-
-<p>
-	All components file names must end with &quot;.cfc&quot;.
+	The term &quot;Gateway&quot; is the name of a well known <a href="http://martinfowler.com/eaaCatalog/gateway.html">design pattern</a>. 
+	This pattern describes an object whose purpose is to encapsulates access to an external system or resource. 
+	In our case the external resource is a relational database.
 </p>
 
 <p>
-	It is common practice that component filenames use <a href="http://c2.com/cgi/wiki?UpperCamelCase">upper camel case</a>. 
-	The same naming convention is used when providing the component's name as a parameter to createObject().
+	There are a number of other design patterns that cover a variety of database access techniques, 
+	but for simplicity and it's appropriateness within CFML we will simply use the term Gateway 
+	to mean an object that communicates with a database. Our Gateways effectively represent a layer 
+	above the database and are the only doorway to accessing its data.
 </p>
 
 <p>
-	Example file names:
+	Let's take a look at a simple Gateway object:
 </p>
-
-<ul>
-<li>User.cfc</li>
-<li>ShoppingCart.cfc</li>
-<li>ProductFinder.cfc</li>
-</ul>
 
 <p>
-	Examples of creating these objects:
+	<img alt='UserGateway UML diagram' src='assets/images/A38F7482A0D02CB45BEE93615A6A2AEA.png'>
 </p>
-
-<ul>
-<li>&lt;cfset user = createObject(&quot;component&quot;,&quot;User&quot;)&gt;</li>
-<li>&lt;cfset shoppingCart = createObject(&quot;component&quot;,&quot;ShoppingCart&quot;)&gt;</li>
-<li>&lt;cfset productFinder = createObject(&quot;component&quot;,&quot;ProductFinder&quot;)&gt;</li>
-</ul>
-
-<h2>Component structure</h2>
 
 <p>
-	Let's take a look at a simple component called ThresholdCounter.cfc so we can review its structure 
-	and take a look at some common best practices. No need to worry about what this component is doing 
-	at the moment, we will look at that later. For now let's focus on it's structure.
+	To use this Gateway you may write code such as:
 </p>
+
+
+
+
+
+
+
+<div class="highlight"><pre><code class="cfm"><span class="cm">&lt;!--- Create your gateway ---&gt;</span>
+<span class="nb">&lt;cfset</span> <span class="nv">userGateway</span> <span class="o">=</span> <span class="p">...</span> <span class="nv">code</span> <span class="nv">to</span> <span class="nv">create</span> <span class="nv">the</span> <span class="nv">gateway</span> <span class="p">...</span><span class="nb">&gt;</span>
+
+<span class="cm">&lt;!--- Create a user ... oops a typo there ---&gt;</span>
+<span class="nb">&lt;cfset</span> <span class="nv">userId</span> <span class="o">=</span> <span class="nf">userGateway.createUser</span><span class="p">(</span><span class="s2">&quot;Alduos&quot;</span><span class="p">,</span><span class="s2">&quot;Huxley&quot;</span><span class="p">)</span><span class="nb">&gt;</span>
+
+<span class="cm">&lt;!--- Perform an update and fix the typo ---&gt;</span>
+<span class="nb">&lt;cfset</span> <span class="nf">userGateway.updateUser</span><span class="p">(</span><span class="nv">userId</span><span class="p">,</span><span class="s2">&quot;Aldous&quot;</span><span class="p">,</span><span class="s2">&quot;Huxley&quot;</span><span class="p">)</span><span class="nb">&gt;</span>
+
+<span class="cm">&lt;!--- Delete the user ---&gt;</span>
+<span class="nb">&lt;cfset</span> <span class="nf">userGateway.deleteUserById</span><span class="p">(</span><span class="nv">userId</span><span class="p">)</span><span class="nb">&gt;</span>
+
+<span class="cm">&lt;!--- Find any others users with the name &quot;Huxley&quot; ---&gt;</span>
+<span class="nb">&lt;cfset</span> <span class="nv">users</span> <span class="o">=</span> <span class="nf">userGateway.findUsersBySearchTerm</span><span class="p">(</span><span class="s2">&quot;huxley&quot;</span><span class="p">)</span><span class="nb">&gt;</span>
+</code></pre>
+</div>
+
+
+
+
+
+
+<h2>Gateways and Datasources</h2>
+
+<p>
+	Considering that Gateways are our doorway to a database, 
+	they will need to know about the datasource defined within the ColdFusion Administrator.
+</p>
+
+<p>
+	In many typical CFML applications the datasource details are stored in the 
+	application scope and used wherever required:
+</p>
+
+
+
+
+
+
+<div class="highlight"><pre><code class="cfm"><span class="nt">&lt;cfquery</span> 
+    <span class="na">name=</span><span class="s">&quot;userQuery&quot;</span> 
+    <span class="na">datasource=</span><span class="s">&quot;#application.dsName#&quot;</span>
+    <span class="na">username=</span><span class="s">&quot;#application.dsUser#&quot;</span>
+    <span class="na">password=</span><span class="s">&quot;#application.dsPass#&quot;</span><span class="nt">&gt;</span>
+    ... SQL here ... 
+<span class="nt">&lt;/cfquery&gt;</span>
+</code></pre>
+</div>
+
+
+
+
+
+
+<p>
+	However this technique of accessing the global application scope directly can lead to 
+	<a href="procedural-vs-object-oriented.html">code that is difficult to change</a>. 
+	A better technique is to provide the Datasource details to the Gateway objects when they are created. 
+</p>
+
+<p>
+	Firstly, let's create a Datasource object that will contain our datasource details:
+</p>
+
+<p>
+	<img alt='Datasource UML diagram' src='assets/images/FB57B1EB3131F4D34707C1C0DBE7BF36.png'>
+</p>
+
+<p>
+	The name(), username() and password() functions simply return the name, username and password of the datasource.
+</p>
+
+<p>
+	Our Datasource component may be written as follows:
+</p>
+
+
+
+
+
 
 <div class="highlight"><pre><code class="cfm"><span class="nb">&lt;cfcomponent</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
 
     <span class="cm">&lt;!--- PRIVATE VARIABLES ---&gt;</span>
 
-    <span class="nb">&lt;cfset</span> <span class="nv">variables.threshold</span> <span class="o">=</span> <span class="m">100</span><span class="nb">&gt;</span>
-    <span class="nb">&lt;cfset</span> <span class="nv">variables.currentTotal</span> <span class="o">=</span> <span class="m">0</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfset</span> <span class="nv">variables.instance</span> <span class="o">=</span> <span class="p">{}</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfset</span> <span class="nv">variables.instance.name</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfset</span> <span class="nv">variables.instance.username</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfset</span> <span class="nv">variables.instance.password</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="nb">&gt;</span>
+
+    <span class="cm">&lt;!--- INITIALISATION ---&gt;</span>
+
+    <span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;init&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfargument</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;name&quot;</span> <span class="nv">required</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfargument</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;username&quot;</span> <span class="nv">required</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfargument</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;password&quot;</span> <span class="nv">required</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfset</span> <span class="nv">variables.instance.name</span> <span class="o">=</span> <span class="nv">arguments.name</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfset</span> <span class="nv">variables.instance.username</span> <span class="o">=</span> <span class="nv">arguments.username</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfset</span> <span class="nv">variables.instance.password</span> <span class="o">=</span> <span class="nv">arguments.password</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;/cffunction&gt;</span>
 
     <span class="cm">&lt;!--- PUBLIC FUNCTIONS ---&gt;</span>
 
-    <span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;addAmount&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
-        <span class="nb">&lt;cfargument</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;amount&quot;</span> <span class="nv">type</span><span class="o">=</span><span class="s2">&quot;numeric&quot;</span> <span class="nv">required</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="nb">&gt;</span>
-        <span class="nb">&lt;cfset</span> <span class="nv">variables.currentTotal</span> <span class="o">=</span> <span class="nv">variables.currentTotal</span> <span class="o">+</span> <span class="nv">arguments.amount</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;name&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfreturn</span> <span class="nv">variables.instance.name</span><span class="nb">&gt;</span>
     <span class="nb">&lt;/cffunction&gt;</span>
 
-    <span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;thresholdHasBeenReached&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span> <span class="nv">returntype</span><span class="o">=</span><span class="s2">&quot;boolean&quot;</span><span class="nb">&gt;</span>
-        <span class="nb">&lt;cfset</span> <span class="k">var</span> <span class="nv">thresholdReached</span> <span class="o">=</span> <span class="nv">variables.currentTotal</span> <span class="nv">ge</span> <span class="nv">variables.threshold</span><span class="nb">&gt;</span>
-        <span class="nb">&lt;cfreturn</span> <span class="nv">thresholdReached</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;username&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfreturn</span> <span class="nv">variables.instance.username</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;/cffunction&gt;</span>
+
+    <span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;password&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfreturn</span> <span class="nv">variables.instance.password</span><span class="nb">&gt;</span>
     <span class="nb">&lt;/cffunction&gt;</span>
 
 <span class="nb">&lt;/cfcomponent&gt;</span>
@@ -108,215 +191,728 @@
 </div>
 
 
-<h3>Suppress whitespace output</h3>
+
+
+
+
 
 <p>
-	Notice that the &lt;cfcomponent&gt; tag and the &lt;cffunction&gt; tags both have output=&quot;false&quot;. 
-	Always put these on every component and function that you create. 
-	This prevents <a href="http://en.wikipedia.org/wiki/White_space">whitespace</a> 
-	being unintentionally sent to the browser. As a general rule, your components should never send output directly to the browser. 
+	Once we have created a Datasource object then we can provide this object to all of our Gateway objects. For example:
 </p>
 
-<h3>Use the variables scope to keep your data private</h3>
 
-<p>
-	Our two data values are places in the &quot;variables&quot; scope. 
-</p>
 
-<div class="highlight"><pre><code class="cfm"><span class="nb">&lt;cfset</span> <span class="nv">variables.maxThreshold</span> <span class="o">=</span> <span class="m">100</span><span class="nb">&gt;</span>
-<span class="nb">&lt;cfset</span> <span class="nv">variables.currentTotal</span> <span class="o">=</span> <span class="m">0</span><span class="nb">&gt;</span>
+
+
+
+<div class="highlight"><pre><code class="cfm"><span class="cm">&lt;!--- Create our datasource ---&gt;</span>
+<span class="nb">&lt;cfset</span> <span class="nv">datasource</span> <span class="o">=</span> <span class="nf">createObject</span><span class="p">(</span><span class="s2">&quot;component&quot;</span><span class="p">,</span><span class="s2">&quot;com.util.Datasource&quot;</span><span class="p">).</span><span class="nf">init</span><span class="p">(</span><span class="s2">&quot;recipeshop&quot;</span><span class="p">,</span><span class="s2">&quot;recipeshop_dbo&quot;</span><span class="p">,</span><span class="s2">&quot;abc123&quot;</span><span class="p">)</span><span class="nb">&gt;</span>
+
+<span class="cm">&lt;!--- Create some databases and provide the datasource object ---&gt;</span>
+<span class="nb">&lt;cfset</span> <span class="nv">userGateway</span> <span class="o">=</span> <span class="nf">createObject</span><span class="p">(</span><span class="s2">&quot;component&quot;</span><span class="p">,</span><span class="s2">&quot;com.user.UserGateway&quot;</span><span class="p">).</span><span class="nf">init</span><span class="p">(</span><span class="nv">datasource</span><span class="p">)</span><span class="nb">&gt;</span> 
+<span class="nb">&lt;cfset</span> <span class="nv">recipeGateway</span> <span class="o">=</span> <span class="nf">createObject</span><span class="p">(</span><span class="s2">&quot;component&quot;</span><span class="p">,</span><span class="s2">&quot;com.recipe.RecipeGateway&quot;</span><span class="p">).</span><span class="nf">init</span><span class="p">(</span><span class="nv">datasource</span><span class="p">)</span><span class="nb">&gt;</span> 
 </code></pre>
 </div>
 
 
-<p>
-	You should place all of your component variables in this scope. 
-	The variables scope is also called the &quot;private&quot; scope of the component. 
-	This means that you cannot access these variables directly from outside the object. 
-	For example, you can only change the currentTotal variable by calling the addAmount() function. 
-	There is no other way to change the currentTotal variable.
-</p>
 
-<h3>Correctly scope local function variables</h3>
 
-<p>
-	Local function variables are variables that are only used within a single function. 
-	In the thresholdHasBeenReached() function we have a local function variable called thresholdReached. 
-	This has been &quot;var&quot;ed to ensure the variable is kept private to the function. 
-	If this is not done, then the variable will &quot;leak out&quot; into the variables scope which can cause later problems.
-</p>
-
-<div class="highlight"><pre><code class="cfm"><span class="nb">&lt;cfset</span> <span class="k">var</span> <span class="nv">thresholdReached</span> <span class="o">=</span> <span class="nv">variables.currentTotal</span> <span class="nv">ge</span> <span class="nv">variables.threshold</span><span class="nb">&gt;</span>
-</code></pre>
-</div>
 
 
 <p>
-	In ColdFusion 8 and earlier you must &quot;var&quot; all local function variables at the top of your function.
+	So here we first create a datasource object and provide the datasource details to its init() function. 
+	Next we create the Gateway objects a provide this Datasource object to their init() functions.
 </p>
 
 <p>
-	In ColdFusion 9 you may var your variables anywhere in the function, 
-	or you may use the new &quot;local&quot; scope that exists in functions. For example:
-</p>
-
-<div class="highlight"><pre><code class="cfm"><span class="cm">&lt;!--- Using ColdFusion 9&#39;s &quot;local&quot; scope in a function. ---&gt;</span>
-<span class="nb">&lt;cfset</span> <span class="nv">local.thresholdReached</span> <span class="o">=</span> <span class="nv">variables.currentTotal</span> <span class="nv">ge</span> <span class="nv">variables.threshold</span><span class="nb">&gt;</span>
-</code></pre>
-</div>
-
-
-<p>
-	To ensure you have correctly &quot;var&quot;ed all of your component's local variables 
-	you can scan your code using the excellent <a href="http://varscoper.riaforge.org/">VarScoper</a> tool.
-</p>
-
-<h3>Specify the scopes of all variables</h3>
-
-<p>
-	When writing code always specify the scope that all of your variables are in. 
-	This can help prevent subtle bugs being introduced in your code.
+	This technique of passing the datasource into the gateway is a form of 
+	<a href="dependency-injection.html">dependency injection</a>.
 </p>
 
 <p>
-	For example, this is good:
+	So what exactly is the responsibility of a Gateway object. Let's cover some guidelines for Gateway design.
 </p>
 
-<div class="highlight"><pre><code class="cfm"><span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;addAmount&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
-    <span class="nb">&lt;cfargument</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;amount&quot;</span> <span class="nv">type</span><span class="o">=</span><span class="s2">&quot;numeric&quot;</span> <span class="nv">required</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="nb">&gt;</span>
-    <span class="nb">&lt;cfset</span> <span class="nv">variables.currentTotal</span> <span class="o">=</span> <span class="nv">variables.currentTotal</span> <span class="o">+</span> <span class="nv">arguments.amount</span><span class="nb">&gt;</span>
+<h2>Gateway design guidelines</h2>
+
+<p>
+	We can start with some general guidelines for developing Gateways in your application:
+</p>
+
+<ol>
+<li>Gateways are the only objects in your application that may contain SQL code.</li>
+<li>Gateways do not know about objects, they simply execute SQL and optionally return query recordsets.</li>
+<li>You should create a separate gateway for each &quot;logical section&quot; of your application.</li>
+<li>Gateways are &quot;singletons&quot; and can be created once on application startup.</li>
+<li>Gateways do not perform transactions</li>
+</ol>
+
+<p>
+	Let's cover each of these in turn:
+</p>
+
+<h3>Gateways are responsible for all SQL</h3>
+
+<p>
+	As a general rule, if you need to write some SQL then it should be in a Gateway. 
+	This makes any SQL much easier to manage because it is all contained in a single object. 
+	This also helps to minimise queries being duplicated throughout your code.
+</p>
+
+<h3>Gateways don't deal with objects</h3>
+
+<p>
+	Good object design tries to keep the purpose of objects very narrow; 
+	they should not try to do a wide scope of things. In the case of Gateways, 
+	they have the very specific role of performing queries, and that's all. 
+	This means that objects are neither passed into or out of the Gateway functions.
+</p>
+
+<h3>Gateways represent logical function groupings</h3>
+
+<p>
+	When creating Gateways they should be designed and named based on their &quot;logical&quot; purpose. 
+	For example, it is better to have a &quot;UserGateway&quot; and a &quot;ProductGateway&quot; rather 
+	than an &quot;AdminGateway&quot; and &quot;PublicGateway&quot;. 
+	This means that the UserGateway, for example, provides both admin and public functions grouped together.
+</p>
+
+<h3>Gateways are singletons</h3>
+
+<p>
+	A singleton is an object that only has one &quot;instance&quot; in an application. 
+	It is created once on applcation startup and stored in the application scope. 
+	Gateways are good candidates for singletons:
+</p>
+
+
+
+
+
+
+<div class="highlight"><pre><code class="cfm"><span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;onApplicationStartup&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfset</span> <span class="k">var</span> <span class="nv">datasource</span> <span class="o">=</span> <span class="nf">createObject</span><span class="p">(</span><span class="s2">&quot;component&quot;</span><span class="p">,</span><span class="s2">&quot;com.util.Datasource&quot;</span><span class="p">).</span><span class="nf">init</span><span class="p">(</span><span class="s2">&quot;recipeshop&quot;</span><span class="p">,</span><span class="s2">&quot;recipeshop_dbo&quot;</span><span class="p">,</span><span class="s2">&quot;abc123&quot;</span><span class="p">)</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfset</span> <span class="k">var</span> <span class="nv">userGateway</span> <span class="o">=</span> <span class="nf">createObject</span><span class="p">(</span><span class="s2">&quot;component&quot;</span><span class="p">,</span><span class="s2">&quot;com.user.UserGateway&quot;</span><span class="p">).</span><span class="nf">init</span><span class="p">(</span><span class="nv">datasource</span><span class="p">)</span><span class="nb">&gt;</span> 
+    <span class="nb">&lt;cfset</span> <span class="nv">application.userGateway</span> <span class="o">=</span> <span class="nv">userGateway</span><span class="nb">&gt;</span>
 <span class="nb">&lt;/cffunction&gt;</span>
 </code></pre>
 </div>
 
 
+
+
+
+
+<h3>Gateways do not perform transactions</h3>
+
 <p>
-	And this is bad:
+	The &lt;cftransaction&gt; tag should not be used within Gateways. 
+	As Gateways are performing the individual queries, it is up to the calling code to manage any transactional requirements 
+	surrounding multiple Gateway function calls.
 </p>
 
-<div class="highlight"><pre><code class="cfm"><span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;addAmount&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
-    <span class="nb">&lt;cfargument</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;amount&quot;</span> <span class="nv">type</span><span class="o">=</span><span class="s2">&quot;numeric&quot;</span> <span class="nv">required</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="nb">&gt;</span>
-    <span class="nb">&lt;cfset</span> <span class="nv">currentTotal</span> <span class="o">=</span> <span class="nv">currentTotal</span> <span class="o">+</span> <span class="nv">amount</span><span class="nb">&gt;</span>
+
+<h2>Implementing a Gateway</h2>
+
+<p>
+	Let's implement the beginnings of a simple UserGateway object.
+</p>
+
+
+
+
+
+
+<div class="highlight"><pre><code class="cfm"><span class="nb">&lt;cfcomponent</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
+
+    <span class="cm">&lt;!--- PRIVATE VARIABLES ---&gt;</span>
+
+    <span class="nb">&lt;cfset</span> <span class="nv">variables.instance</span> <span class="o">=</span> <span class="p">{}</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfset</span> <span class="nv">variables.instance.datasource</span> <span class="o">=</span> <span class="m">0</span><span class="nb">&gt;</span>
+
+    <span class="cm">&lt;!--- INITIALISATION ---&gt;</span>
+
+   <span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;init&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfargument</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;datasource&quot;</span> <span class="nv">required</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfset</span> <span class="nv">variables.instance.datasource</span> <span class="o">=</span> <span class="nv">arguments.datasource</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;/cffunction&gt;</span>
+
+    <span class="cm">&lt;!--- PUBLIC FUNCTIONS ---&gt;</span>
+
+    <span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;findUserById&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfargument</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;userId&quot;</span> <span class="nv">required</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfset</span> <span class="k">var</span> <span class="nv">userQuery</span> <span class="o">=</span> <span class="m">0</span><span class="nb">&gt;</span>
+        <span class="nt">&lt;cfquery</span>
+            <span class="na">name=</span><span class="s">&quot;userQuery&quot;</span> 
+            <span class="na">datasource=</span><span class="s">&quot;#variables.datasource.name()#&quot;</span>
+            <span class="na">username=</span><span class="s">&quot;#variables.datasource.username()#&quot;</span>
+            <span class="na">password=</span><span class="s">&quot;#variables.datasource.password()#&quot;</span><span class="nt">&gt;</span>
+            select
+                userId,
+                firstName,
+                lastName,
+            from
+                user
+            where
+                userId = <span class="nt">&lt;cfqueryparam</span> <span class="na">type=</span><span class="s">&quot;CF_SQL_INTEGER&quot;</span> <span class="na">value=</span><span class="s">&quot;#val(arguments.userId)#&quot;</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;/cfquery&gt;</span>
+        <span class="nb">&lt;cfreturn</span> <span class="nv">userQuery</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;/cffunction&gt;</span>
+
+    <span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;createUser&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfargument</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;firstName&quot;</span> <span class="nv">required</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfargument</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;lastName&quot;</span> <span class="nv">required</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfset</span> <span class="k">var</span> <span class="nv">userResult</span> <span class="o">=</span> <span class="m">0</span><span class="nb">&gt;</span>
+        <span class="nt">&lt;cfquery</span>
+            <span class="na">result=</span><span class="s">&quot;userResult&quot;</span> 
+            <span class="na">datasource=</span><span class="s">&quot;#variables.datasource.name()#&quot;</span>
+            <span class="na">username=</span><span class="s">&quot;#variables.datasource.username()#&quot;</span>
+            <span class="na">password=</span><span class="s">&quot;#variables.datasource.password()#&quot;</span><span class="nt">&gt;</span>
+            insert into user
+            (
+                firstName,
+                lastName,
+            )
+            values
+            (
+                <span class="nt">&lt;cfqueryparam</span> <span class="na">type=</span><span class="s">&quot;CF_SQL_VARCHAR&quot;</span> <span class="na">value=</span><span class="s">&quot;#arguments.firstName#&quot;</span><span class="nt">&gt;</span>,
+                <span class="nt">&lt;cfqueryparam</span> <span class="na">type=</span><span class="s">&quot;CF_SQL_VARCHAR&quot;</span> <span class="na">value=</span><span class="s">&quot;#arguments.lastName#&quot;</span><span class="nt">&gt;</span>
+            )
+        <span class="nt">&lt;/cfquery&gt;</span>
+        <span class="nb">&lt;cfreturn</span> <span class="nv">userResult.IDENTITYCOL</span><span class="nb">&gt;</span> <span class="cm">&lt;!--- MSSQL auto generated Id value ---&gt;</span>
+    <span class="nb">&lt;/cffunction&gt;</span>
+
+    <span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;deleteUserById&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfargument</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;userId&quot;</span> <span class="nv">required</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="nb">&gt;</span>
+        <span class="nt">&lt;cfquery</span>
+            <span class="na">datasource=</span><span class="s">&quot;#variables.datasource.name()#&quot;</span>
+            <span class="na">username=</span><span class="s">&quot;#variables.datasource.username()#&quot;</span>
+            <span class="na">password=</span><span class="s">&quot;#variables.datasource.password()#&quot;</span><span class="nt">&gt;</span>
+            delete from user
+            where
+                userId = <span class="nt">&lt;cfqueryparam</span> <span class="na">type=</span><span class="s">&quot;CF_SQL_INTEGER&quot;</span> <span class="na">value=</span><span class="s">&quot;#val(arguments.userId)#&quot;</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;/cfquery&gt;</span>
+    <span class="nb">&lt;/cffunction&gt;</span>
+
+<span class="nb">&lt;/cfcomponent&gt;</span>
+</code></pre>
+</div>
+
+
+
+
+
+
+<p>
+	We might use this Gateway as follows:
+</p>
+
+
+
+
+
+
+
+<div class="highlight"><pre><code class="cfm"><span class="cm">&lt;!--- Create our gateway ---&gt;</span>
+<span class="nb">&lt;cfset</span> <span class="nv">datasource</span> <span class="o">=</span> <span class="nf">createObject</span><span class="p">(</span><span class="s2">&quot;component&quot;</span><span class="p">,</span><span class="s2">&quot;com.util.Datasource&quot;</span><span class="p">).</span><span class="nf">init</span><span class="p">(</span><span class="s2">&quot;recipeshop&quot;</span><span class="p">,</span><span class="s2">&quot;recipeshop_dbo&quot;</span><span class="p">,</span><span class="s2">&quot;abc123&quot;</span><span class="p">)</span><span class="nb">&gt;</span>
+<span class="nb">&lt;cfset</span> <span class="nv">userGateway</span> <span class="o">=</span> <span class="nf">createObject</span><span class="p">(</span><span class="s2">&quot;component&quot;</span><span class="p">,</span><span class="s2">&quot;com.user.UserGateway&quot;</span><span class="p">).</span><span class="nf">init</span><span class="p">(</span><span class="nv">datasource</span><span class="p">)</span><span class="nb">&gt;</span> 
+
+<span class="cm">&lt;!--- Create a struct containing all of the user data ---&gt;</span>
+<span class="nb">&lt;cfset</span> <span class="nv">user</span> <span class="o">=</span> <span class="p">{}</span><span class="nb">&gt;</span>
+<span class="nb">&lt;cfset</span> <span class="nv">user.firstName</span> <span class="o">=</span> <span class="s2">&quot;Samwise&quot;</span><span class="nb">&gt;</span>
+<span class="nb">&lt;cfset</span> <span class="nv">user.lastName</span> <span class="o">=</span> <span class="s2">&quot;Gamgee&quot;</span><span class="nb">&gt;</span>
+
+<span class="cm">&lt;!--- Create the new user, passing the user struct as arguments ---&gt;</span>
+<span class="nb">&lt;cfset</span> <span class="nv">userId</span> <span class="o">=</span> <span class="nf">userGateway.createUser</span><span class="p">(</span><span class="nv">argumentCollection</span><span class="o">=</span><span class="nv">user</span><span class="p">)</span><span class="nb">&gt;</span>
+</code></pre>
+</div>
+
+
+
+
+
+
+<h2>Gateway function names</h2>
+
+<p>
+	It is a good idea to ensure that your function names are not too short. 
+	For example, avoid names such as create() or delete(). 
+	It is better to have more explicit names such as createUser() or deleteUserById(). 
+	This will better serve future needs such as if you needed to add functions such as createGuestUser() or deleteUserByUsername(). 
+</p>
+
+
+
+
+<h2>Which Gateway should your code go in?</h2>
+
+<p>
+	There are times where is may not be clear which Gateway object your query needs to go in. 
+	For example, suppose you have a system for managing user submitted recipes. 
+	You may have a UserGateway for user related queries and a RecipeGateway for recipe related queries. 
+	However, if you need to produce a listing that contained both Users and Recipes then where should your query go? 
+	And perhaps the recipes also belong to Categories, which are managed via a Category gateway, also needed to be included in the listing.
+</p>
+
+<p>
+	There are various options but if the <i>intent</i> of the query is well understood it helps us to 
+	decide which gateway the query should go in. In this example the <i>intent</i> is about displaying recipes, 
+	whether it be by user or category, so this query is most likely suited for the RecipeGateway. 
+</p>
+
+<p>
+	If the <i>intent</i> genuinely belongs in more than one area, then create a new Gateway specifically 
+	for that grouping; a UserRecipeGateway. If you need one query in this grouped gateway then it's 
+	likely you will need more here.
+</p>
+
+
+<h2>Handling dates, times and special UI fields</h2>
+
+<p>
+	It is common for us to collect dates, times or other special kinds of user interface elements 
+	in a form and pass these down for saving to a database. When we get to the Gateway level we 
+	do not want to expose our gateway to any details about our form. The important goal here is 
+	that if our form is changed then it must not have any impact on our Gateway.
+</p>
+
+<p>
+	For example, suppose we collect a date in a form field in MM/DD/YYYY format. We must convert this 
+	to a date/time object <i>before</i> it is passed into the Gateway. The Gateway then only needs to 
+	deal with a date object, and does not perform any string parsing. If we then change the format of 
+	the date field to accept &quot;DD/MM/YYYY&quot; on the form for users in a different region then 
+	we will not have to change our Gateway.
+</p>
+
+<p>
+	Another example is with forms that contain a dynamic number of fields. For example, you may have a 
+	form that contains field names preference_1, preference_2, preference_3, and so on, where the number 
+	of preferences is different depending on the user currently logged in. In this situation the preferences 
+	should be converted to a list, a struct or an array before being provided to the Gateway. 
+	If the form field names were changed for any reason then the Gateway could remain unchanged.
+</p>
+
+<p>
+	So the important guide here is that the Gateway should never work with the URL or form scopes directly, 
+	and in particular should never perform parsing of form field data. 
+	This must be done prior to the Gateway functions being called.
+</p>
+
+
+<h2>Minimising duplication</h2>
+
+<p>
+	When performing select queries it is common that you will want to select the same (or a similar) 
+	set of columns in many queries. For example, you may have functions such as
+</p>
+
+<ul>
+<li>findUserByUsername(username)</li>
+<li>findUserById(id)</li>
+<li>findUsersBySearchTerm(term)</li>
+</ul>
+
+<p>
+	In these cases it may be convenient to create a new <i>private</i> function named 
+	findUsersByFilter() that can handle all of these types of queries. 
+	If possible this function should remain private to the Gateway and specific public functions are written that call it.
+</p>
+
+<p>
+	For example:
+</p>
+
+
+
+
+
+
+<div class="highlight"><pre><code class="cfm"><span class="nb">&lt;cfcomponent</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
+
+    <span class="cm">&lt;!--- PRIVATE VARIABLES ---&gt;</span>
+
+    <span class="nb">&lt;cfset</span> <span class="nv">variables.instance</span> <span class="o">=</span> <span class="p">{}</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfset</span> <span class="nv">variables.instance.datasource</span> <span class="o">=</span> <span class="m">0</span><span class="nb">&gt;</span>
+
+    <span class="cm">&lt;!--- INITIALISATION ---&gt;</span>
+
+   <span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;init&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfargument</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;datasource&quot;</span> <span class="nv">required</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfset</span> <span class="nv">variables.instance.datasource</span> <span class="o">=</span> <span class="nv">arguments.datasource</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;/cffunction&gt;</span>
+
+    <span class="cm">&lt;!--- PUBLIC FUNCTIONS ---&gt;</span>
+
+    <span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;findUserById&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfargument</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;userId&quot;</span> <span class="nv">required</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfset</span> <span class="k">var</span> <span class="nv">filter</span> <span class="o">=</span> <span class="p">{}</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfset</span> <span class="nv">filter.userId</span> <span class="o">=</span> <span class="nv">arguments.userId</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfreturn</span> <span class="nf">findUsersByFilter</span><span class="p">(</span><span class="nv">filter</span><span class="p">)</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;/cffunction&gt;</span>
+
+    <span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;findUserByUsername&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfargument</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;username&quot;</span> <span class="nv">required</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfset</span> <span class="k">var</span> <span class="nv">filter</span> <span class="o">=</span> <span class="p">{}</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfset</span> <span class="nv">filter.username</span> <span class="o">=</span> <span class="nv">arguments.username</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfreturn</span> <span class="nf">findUsersByFilter</span><span class="p">(</span><span class="nv">filter</span><span class="p">)</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;/cffunction&gt;</span>
+
+    <span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;findUserBySearchTerm&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfargument</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;searchterm&quot;</span> <span class="nv">required</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfset</span> <span class="k">var</span> <span class="nv">filter</span> <span class="o">=</span> <span class="p">{}</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfset</span> <span class="nv">filter.searchterm</span> <span class="o">=</span> <span class="nv">arguments.searchterm</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfreturn</span> <span class="nf">findUsersByFilter</span><span class="p">(</span><span class="nv">filter</span><span class="p">)</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;/cffunction&gt;</span>
+
+    <span class="cm">&lt;!--- PRIVATE FUNCTIONS ---&gt;</span>
+
+    <span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;findUsersByFilter&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfargument</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;filter&quot;</span> <span class="nv">required</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfset</span> <span class="k">var</span> <span class="nv">usersQuery</span> <span class="o">=</span> <span class="m">0</span><span class="nb">&gt;</span>
+        <span class="nt">&lt;cfquery</span>
+            <span class="na">name=</span><span class="s">&quot;usersQuery&quot;</span> 
+            <span class="na">datasource=</span><span class="s">&quot;#variables.datasource.name()#&quot;</span>
+            <span class="na">username=</span><span class="s">&quot;#variables.datasource.username()#&quot;</span>
+            <span class="na">password=</span><span class="s">&quot;#variables.datasource.password()#&quot;</span><span class="nt">&gt;</span>
+            select
+                userId,
+                username,
+                firstName,
+                lastName,
+            from
+                user
+            where
+                1=1
+                <span class="nb">&lt;cfif</span> <span class="nf">structKeyExists</span><span class="p">(</span><span class="nv">arguments.filter</span><span class="p">,</span><span class="s2">&quot;userId&quot;</span><span class="p">)</span><span class="nb">&gt;</span>
+                    and userId = <span class="nt">&lt;cfqueryparam</span> <span class="na">type=</span><span class="s">&quot;CF_SQL_INTEGER&quot;</span> <span class="na">value=</span><span class="s">&quot;#val(arguments.filter.userId)#&quot;</span><span class="nt">&gt;</span>
+                <span class="nb">&lt;/cfif&gt;</span>
+                <span class="nb">&lt;cfif</span> <span class="nf">structKeyExists</span><span class="p">(</span><span class="nv">arguments.filter</span><span class="p">,</span><span class="s2">&quot;username&quot;</span><span class="p">)</span><span class="nb">&gt;</span>
+                    and username = <span class="nt">&lt;cfqueryparam</span> <span class="na">type=</span><span class="s">&quot;CF_SQL_VARCHAR&quot;</span> <span class="na">value=</span><span class="s">&quot;#val(arguments.filter.username)#&quot;</span><span class="nt">&gt;</span>
+                <span class="nb">&lt;/cfif&gt;</span>
+                <span class="nb">&lt;cfif</span> <span class="nf">structKeyExists</span><span class="p">(</span><span class="nv">arguments.filter</span><span class="p">,</span><span class="s2">&quot;searchterm&quot;</span><span class="p">)</span><span class="nb">&gt;</span>
+                    and
+                        (
+                            firstName like <span class="nt">&lt;cfqueryparam</span> <span class="na">type=</span><span class="s">&quot;CF_SQL_VARCHAR&quot;</span> <span class="na">value=</span><span class="s">&quot;%#arguments.filter.searchterm#%&quot;</span><span class="nt">&gt;</span>
+                            or
+                            lastName like <span class="nt">&lt;cfqueryparam</span> <span class="na">type=</span><span class="s">&quot;CF_SQL_VARCHAR&quot;</span> <span class="na">value=</span><span class="s">&quot;%#arguments.filter.searchterm#%&quot;</span><span class="nt">&gt;</span>
+                        )
+                <span class="nb">&lt;/cfif&gt;</span>
+        <span class="nt">&lt;/cfquery&gt;</span>
+        <span class="nb">&lt;cfreturn</span> <span class="nv">usersQuery</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;/cffunction&gt;</span>
+
+<span class="nb">&lt;/cfcomponent&gt;</span>
+</code></pre>
+</div>
+
+
+
+
+
+
+
+<p>
+	This can be particularly useful if you have a common set of tables that need to be joined on most queries.
+</p>
+
+<p>
+	However, be careful not to let your &quot;find by filter&quot; function become too complex or large, 
+	otherwise it may become a one thousand line monster for you to maintain. 
+	If it starts to become too complicated to understand then it is better to create new functions for 
+	the complicated queries and for you to &quot;wear&quot; the cost of the duplicate code. 
+	After all, at least the duplicate code will typically only exists in the same single component.  
+</p>
+
+
+<h2>Handling sort ordering</h2>
+
+<p>
+	It is common to need to execute queries that are identical except for the sort order. 
+	In these cases an additional parameter can be passed into the Gateway to specify the sort order required.
+</p>
+
+<p>
+	However, it is useful to minimise passing in &quot;SQL syntax&quot; 
+	ordering criteria into your Gateways. For example, suppose we have the following query:
+</p>
+
+
+
+
+
+
+<div class="highlight"><pre><code class="cfm"><span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;findAllUsersAndRecipes&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfargument</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;orderBy&quot;</span> <span class="nv">required</span><span class="o">=</span><span class="s2">&quot;false&quot;</span> <span class="k">default</span><span class="o">=</span><span class="s2">&quot;u.lastName&quot;</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfset</span> <span class="k">var</span> <span class="nv">usersRecipesQuery</span> <span class="o">=</span> <span class="m">0</span><span class="nb">&gt;</span>
+    <span class="nt">&lt;cfquery</span>
+        <span class="na">name=</span><span class="s">&quot;usersRecipesQuery&quot;</span> 
+        <span class="na">datasource=</span><span class="s">&quot;#variables.datasource.name()#&quot;</span>
+        <span class="na">username=</span><span class="s">&quot;#variables.datasource.username()#&quot;</span>
+        <span class="na">password=</span><span class="s">&quot;#variables.datasource.password()#&quot;</span><span class="nt">&gt;</span>
+        select
+            u.userId,
+            u.firstName,
+            u.lastName,
+            r.recipeId,
+            r.recipeName
+        from
+            user u
+            inner join recipe r on u.userId = r.userId
+        order by
+           #arguments.orderBy#
+        <span class="nt">&lt;/cfquery&gt;</span>
+    <span class="nb">&lt;cfreturn</span> <span class="nv">usersRecipesQuery</span><span class="nb">&gt;</span>
 <span class="nb">&lt;/cffunction&gt;</span>
 </code></pre>
 </div>
 
 
-<h3>First variables, then functions</h3>
+
+
+
 
 <p>
-	It is good practice to list out all of your variables at the top of your component 
-	and then follow them with your component's functions. In addition to this, you should
-	always list out every variable you plan to use at the top of your components. 
-	This helps others reading the code to immediately see the set of shared variables within your component. 
+	When using this function we may write something like:
 </p>
+
+
+
+
+
+
+<div class="highlight"><pre><code class="cfm"><span class="cm">&lt;!--- Find all users and recipes, ordered by recipe name, then user first name ---&gt;</span>  
+<span class="nb">&lt;cfset</span> <span class="nv">usersAndRecipes</span> <span class="o">=</span> <span class="nf">recipeGateway.findAllUsersAndRecipes</span><span class="p">(</span><span class="s2">&quot;r.recipeName,u.firstName&quot;</span><span class="p">)</span><span class="nb">&gt;</span>
+</code></pre>
+</div>
+
+
+
+
+
+
 
 <p>
-	In this example, comments have been added to identify these sections. 
-	These comment dividers can help other team members quickly find sections within your components.
+	The problem with here is that the code that uses the Gateway needs to know details 
+	about the underlying query in order to provide the order by values. 
+	If the &quot;aliases&quot; of the gateway query needed to change for any reason 
+	then we would also need to change all of the calling code.
 </p>
 
-<h3>Specify the types of your data</h3>
 
 <p>
-	It is good practice to specify the types of variables in your function arguments 
-	and your function return values. These will help catch problems with invalid data 
-	being passed into or out of your functions. 
+	An alternative approach is to pass in keywords that represent the sortable columns. 
+	For example, it would be better to write this:
 </p>
 
-<h2>Other common practices</h2>
+
+
+
+
+
+
+<div class="highlight"><pre><code class="cfm"><span class="cm">&lt;!--- Find all users and recipes, ordered by recipe name, then user first name ---&gt;</span>  
+<span class="nb">&lt;cfset</span> <span class="nv">usersAndRecipes</span> <span class="o">=</span> <span class="nf">recipeGateway.findAllUsersAndRecipes</span><span class="p">(</span><span class="s2">&quot;recipeName,firstName&quot;</span><span class="p">)</span><span class="nb">&gt;</span>
+</code></pre>
+</div>
+
+
+
+
 
 <p>
-	There are some other common practices that are not shown here 
-	that you can also use these if you prefer their style.
+	And change our query order by statement slightly by creating a lookup 
+	struct of &quot;sortable&quot; fields and the corresponding sort values.
 </p>
 
-<h3>XHTMLise your tags</h3>
 
-<p>
-	Some developers write ColdFusion tags follow correct XHTML syntax. For example, rather than writing this:
-</p>
 
-<div class="highlight"><pre><code class="cfm"><span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;addAmount&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
-    <span class="nb">&lt;cfargument</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;amount&quot;</span> <span class="nv">type</span><span class="o">=</span><span class="s2">&quot;numeric&quot;</span> <span class="nv">required</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="nb">&gt;</span>
-    <span class="nb">&lt;cfset</span> <span class="nv">variables.currentTotal</span> <span class="o">=</span> <span class="nv">variables.currentTotal</span> <span class="o">+</span> <span class="nv">arguments.amount</span><span class="nb">&gt;</span>
+
+
+
+<div class="highlight"><pre><code class="cfm"><span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;findAllUsersAndRecipes&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfargument</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;orderBy&quot;</span> <span class="nv">required</span><span class="o">=</span><span class="s2">&quot;false&quot;</span> <span class="k">default</span><span class="o">=</span><span class="s2">&quot;lastName&quot;</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfset</span> <span class="k">var</span> <span class="nv">usersRecipesQuery</span> <span class="o">=</span> <span class="m">0</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfset</span> <span class="k">var</span> <span class="nv">field</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfset</span> <span class="k">var</span> <span class="nv">orderBySQL</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfset</span> <span class="k">var</span> <span class="nv">orderByFields</span> <span class="o">=</span> <span class="p">{}</span><span class="nb">&gt;</span>
+
+    <span class="cm">&lt;!--- Create the order by lookup ---&gt;</span>
+    <span class="nb">&lt;cfset</span> <span class="nv">orderByFields</span><span class="p">[</span><span class="s2">&quot;firstName&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;u.firstName&quot;</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfset</span> <span class="nv">orderByFields</span><span class="p">[</span><span class="s2">&quot;lastName&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;u.lastName&quot;</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfset</span> <span class="nv">orderByFields</span><span class="p">[</span><span class="s2">&quot;recipeName&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;r.recipeName&quot;</span><span class="nb">&gt;</span>
+
+    <span class="cm">&lt;!--- Create the actual order by SQL statement ---&gt;</span>
+    <span class="nb">&lt;cfloop</span> <span class="nv">index</span><span class="o">=</span><span class="s2">&quot;field&quot;</span> <span class="nv">list</span><span class="o">=</span><span class="s2">&quot;</span><span class="s-Interp">#arguments.orderBy#</span><span class="s2">&quot;</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;cfif</span> <span class="nf">structKeyExists</span><span class="p">(</span><span class="nv">orderByFields</span><span class="p">,</span><span class="nv">field</span><span class="p">)</span><span class="nb">&gt;</span>
+            <span class="nb">&lt;cfset</span> <span class="nv">orderBySQL</span> <span class="o">=</span> <span class="nf">listAppend</span><span class="p">(</span><span class="nv">orderBySQL</span><span class="p">,</span><span class="nv">orderByFields</span><span class="p">[</span><span class="nv">field</span><span class="p">])</span><span class="nb">&gt;</span>
+        <span class="nb">&lt;/cfif&gt;</span>
+    <span class="nb">&lt;/cfloop&gt;</span>
+
+    <span class="nt">&lt;cfquery</span>
+        <span class="na">name=</span><span class="s">&quot;usersRecipesQuery&quot;</span> 
+        <span class="na">datasource=</span><span class="s">&quot;#variables.datasource.name()#&quot;</span>
+        <span class="na">username=</span><span class="s">&quot;#variables.datasource.username()#&quot;</span>
+        <span class="na">password=</span><span class="s">&quot;#variables.datasource.password()#&quot;</span><span class="nt">&gt;</span>
+        select
+            u.userId,
+            u.firstName,
+            u.lastName,
+            r.recipeId,
+            r.recipeName
+        from
+            user u
+            inner join recipe r on u.userId = r.userId
+
+        <span class="cm">&lt;!--- Only sort if an orderBy list is provided ---&gt;</span>
+        <span class="nb">&lt;cfif</span> <span class="k">len</span><span class="p">(</span><span class="nv">orderBySQL</span><span class="p">)</span> <span class="o">gt</span> <span class="m">0</span><span class="nb">&gt;</span>
+            order by
+                #orderBySQL#
+        <span class="nb">&lt;/cfif&gt;</span>
+
+    <span class="nt">&lt;/cfquery&gt;</span>
+    <span class="nb">&lt;cfreturn</span> <span class="nv">usersRecipesQuery</span><span class="nb">&gt;</span>
 <span class="nb">&lt;/cffunction&gt;</span>
 </code></pre>
 </div>
 
 
+
+
+
+
 <p>
-	You would write this:
+	For simple Gateways this kind of additional work may not be required, 
+	but if there are numerous calls to a Gateway with varied order by statements, 
+	then this may be of benefit.
 </p>
 
-<div class="highlight"><pre><code class="cfm"><span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;addAmount&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
-    <span class="nb">&lt;cfargument</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;amount&quot;</span> <span class="nv">type</span><span class="o">=</span><span class="s2">&quot;numeric&quot;</span> <span class="nv">required</span><span class="o">=</span><span class="s2">&quot;true&quot;</span> <span class="o">/</span><span class="nb">&gt;</span>
-    <span class="nb">&lt;cfset</span> <span class="nv">variables.currentTotal</span> <span class="o">=</span> <span class="nv">variables.currentTotal</span> <span class="o">+</span> <span class="nv">arguments.amount</span> <span class="o">/</span><span class="nb">&gt;</span>
+
+
+<h2>Accessing multiple datasources</h2>
+
+<p>
+	If you have an application that needs to access multiple databases, 
+	then this is quite easily managed by creating multiple datasource objects; one for each database.
+</p>
+
+<p>
+	If different Gateways need different datasources, then only the relevant Datasource object 
+	is provided to the Gateway's init() function.
+</p>
+
+<p>
+	If a single Gateway needs to access multiple datasources, then multiple Datasources objects 
+	are provided to the Gateways init() function.
+</p>
+
+<p>
+	For example:
+</p>
+
+
+
+
+
+
+<div class="highlight"><pre><code class="cfm"><span class="cm">&lt;!--- Create two datasources ---&gt;</span>
+<span class="nb">&lt;cfset</span> <span class="nv">userDatasource</span> <span class="o">=</span> <span class="nf">createObject</span><span class="p">(</span><span class="s2">&quot;component&quot;</span><span class="p">,</span><span class="s2">&quot;com.util.Datasource&quot;</span><span class="p">).</span><span class="nf">init</span><span class="p">(</span><span class="s2">&quot;recipeshop_users&quot;</span><span class="p">,</span><span class="s2">&quot;recipeshop_users_dbo&quot;</span><span class="p">,</span><span class="s2">&quot;xyz987&quot;</span><span class="p">)</span><span class="nb">&gt;</span>
+<span class="nb">&lt;cfset</span> <span class="nv">recipeDatasource</span> <span class="o">=</span> <span class="nf">createObject</span><span class="p">(</span><span class="s2">&quot;component&quot;</span><span class="p">,</span><span class="s2">&quot;com.util.Datasource&quot;</span><span class="p">).</span><span class="nf">init</span><span class="p">(</span><span class="s2">&quot;recipeshop_recipes&quot;</span><span class="p">,</span><span class="s2">&quot;recipeshop_recipes_dbo&quot;</span><span class="p">,</span><span class="s2">&quot;abc123&quot;</span><span class="p">)</span><span class="nb">&gt;</span>
+
+<span class="cm">&lt;!--- Create some Gateways that use different datasources ---&gt;</span>
+<span class="nb">&lt;cfset</span> <span class="nv">userGateway</span> <span class="o">=</span> <span class="nf">createObject</span><span class="p">(</span><span class="s2">&quot;component&quot;</span><span class="p">,</span><span class="s2">&quot;com.user.UserGateway&quot;</span><span class="p">).</span><span class="nf">init</span><span class="p">(</span><span class="nv">userDatasource</span><span class="p">)</span><span class="nb">&gt;</span> 
+<span class="nb">&lt;cfset</span> <span class="nv">recipeGateway</span> <span class="o">=</span> <span class="nf">createObject</span><span class="p">(</span><span class="s2">&quot;component&quot;</span><span class="p">,</span><span class="s2">&quot;com.sweet.SweetGateway&quot;</span><span class="p">).</span><span class="nf">init</span><span class="p">(</span><span class="nv">recipeDatasource</span><span class="p">)</span><span class="nb">&gt;</span> 
+
+<span class="cm">&lt;!--- Create a Gateway that needs both datasources ---&gt;</span>
+<span class="nb">&lt;cfset</span> <span class="nv">reportGateway</span> <span class="o">=</span> <span class="nf">createObject</span><span class="p">(</span><span class="s2">&quot;component&quot;</span><span class="p">,</span><span class="s2">&quot;com.report.ReportGateway&quot;</span><span class="p">).</span><span class="nf">init</span><span class="p">(</span><span class="nv">userDatasource</span><span class="p">,</span><span class="nv">recipeDatasource</span><span class="p">)</span><span class="nb">&gt;</span> 
+</code></pre>
+</div>
+
+
+
+
+
+
+<h2>Dynamically generated SQL</h2>
+
+<p>
+	If you have a situation where you need to dynamically generate your SQL statements. 
+	There may be complexities in your application that require complex select lists and 
+	differing table joins depending on certain criteria. This kind of work can significantly 
+	complicate your SQL statements and make your Gateway objects complicated to maintain. 
+	In cases such as these it may be better to separate out the SQL construction into a separate 
+	object to leave the actual execution of the SQL for the Gateway.
+</p>
+
+<p>
+	For example, suppose you have a very complicated reporting query that provides significantly 
+	different data depending on the currently logged in user. You can create new component 
+	<i>ReportingQueryBuilder.cfc</i> to generate this SQL for you.
+</p>
+
+<p>
+	The calling code may be written something like:
+</p>
+
+
+
+
+
+
+<div class="highlight"><pre><code class="cfm"><span class="nb">&lt;cfset</span> <span class="nv">currentUser</span> <span class="o">=</span> <span class="p">...</span> <span class="nv">get</span> <span class="nv">access</span> <span class="nv">to</span> <span class="nv">the</span> <span class="nv">currently</span> <span class="nv">logged</span> <span class="nv">in</span> <span class="nv">user</span> <span class="p">...</span><span class="nb">&gt;</span>
+<span class="nb">&lt;cfset</span> <span class="nv">reportQuery</span> <span class="o">=</span> <span class="nf">reportGateway.generateUserReportData</span><span class="p">(</span> <span class="nf">currentUser.userId</span><span class="p">()</span> <span class="p">)</span><span class="nb">&gt;</span>
+</code></pre>
+</div>
+
+
+
+
+
+
+<p>
+	Then in your Gateway function you silently generates the required SQL:
+</p>
+
+
+
+
+
+
+<div class="highlight"><pre><code class="cfm"><span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;generateUserReportData&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfargument</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;userId&quot;</span> <span class="nv">required</span><span class="o">=</span><span class="s2">&quot;false&quot;</span> <span class="k">default</span><span class="o">=</span><span class="s2">&quot;lastName&quot;</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfset</span> <span class="k">var</span> <span class="nv">reportQuery</span> <span class="o">=</span> <span class="m">0</span><span class="nb">&gt;</span>
+    <span class="nb">&lt;cfset</span> <span class="k">var</span> <span class="nv">builder</span> <span class="o">=</span> <span class="m">0</span><span class="nb">&gt;</span>
+
+    <span class="cm">&lt;!--- Create our SQL Builder object ---&gt;</span>
+    <span class="nb">&lt;cfset</span> <span class="nv">builder</span> <span class="o">=</span> <span class="nf">createObject</span><span class="p">(</span><span class="s2">&quot;component&quot;</span><span class="p">,</span><span class="s2">&quot;com.report.ReportQueryBuilder&quot;</span><span class="p">).</span><span class="nf">init</span><span class="p">(</span><span class="nv">arguments.userId</span><span class="p">)</span><span class="nb">&gt;</span>
+
+    <span class="nt">&lt;cfquery</span>
+        <span class="na">name=</span><span class="s">&quot;reportQuery&quot;</span> 
+        <span class="na">datasource=</span><span class="s">&quot;#variables.datasource.name()#&quot;</span>
+        <span class="na">username=</span><span class="s">&quot;#variables.datasource.username()#&quot;</span>
+        <span class="na">password=</span><span class="s">&quot;#variables.datasource.password()#&quot;</span><span class="nt">&gt;</span>
+
+        <span class="cm">&lt;!--- Extract the SQL from our builder object ---&gt;</span>
+        #preserveSingleQuotes( builder.sql() )#
+
+    <span class="nt">&lt;/cfquery&gt;</span>
+    <span class="nb">&lt;cfreturn</span> <span class="nv">reportQuery</span><span class="nb">&gt;</span>
 <span class="nb">&lt;/cffunction&gt;</span>
 </code></pre>
 </div>
 
 
+
+
+
+
 <p>
-	Notice that the &lt;cfargument&gt; and &lt;cfset&gt; tags are &quot;closed&quot; 
-	with a &quot;/&gt;&quot; at the end. ColdFusion will accept both styles and it 
-	is up to your team to decide which style you prefer.
+	The ReportQueryBuilder performs whatever complicated logic is required to construct the SQL 
+	and then simply passes the SQL back via its sql() function to be executed by the Gateway.
 </p>
 
 <p>
-	Note that if you use this syntax when calling a custom tag 
-	then it will cause the code to be executed twice. This behaviour is by design. 
-	Read more about <a href="http://coldfusion.sys-con.com/node/41856">why the code is executed twice</a> 
-	or see the <a href="http://livedocs.adobe.com/coldfusion/8/htmldocs/help.html?content=reuseCode_7.html">ColdFusion documentation</a>.
-</p>
-
-<div class="highlight"><pre><code class="cfm"><span class="cm">&lt;!--- This executes once ---&gt;</span>
-<span class="nt">&lt;cfmodule</span> <span class="na">template=</span><span class="s">&quot;displayUser.cfm&quot;</span><span class="nt">&gt;</span>
-
-<span class="cm">&lt;!--- This executes twice ---&gt;</span>
-<span class="nt">&lt;cfmodule</span> <span class="na">template=</span><span class="s">&quot;displayUser.cfm&quot;</span> <span class="nt">/&gt;</span>
-</code></pre>
-</div>
-
-
-<p>
-	Developers originally started to use this style to be consistent with XHTML documents they were creating.
-	However since the introduction of HTML5, which does not require this XHTML style,
-	applying this style to your CFML code may not be as important.
-</p>
-
-<h3>Use a hint attribute</h3>
-
-<p>
-	A hint attribute can be useful to briefly describe the purpose of a function. For example
-</p>
-
-<div class="highlight"><pre><code class="cfm"><span class="nb">&lt;cffunction</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;addAmount&quot;</span> <span class="nv">output</span><span class="o">=</span><span class="s2">&quot;false&quot;</span> <span class="nv">hint</span><span class="o">=</span><span class="s2">&quot;Adds the specified amount to the Threshold Counter.&quot;</span><span class="nb">&gt;</span>
-    <span class="nb">&lt;cfargument</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;amount&quot;</span> <span class="nv">type</span><span class="o">=</span><span class="s2">&quot;numeric&quot;</span> <span class="nv">required</span><span class="o">=</span><span class="s2">&quot;true&quot;</span> <span class="o">/</span><span class="nb">&gt;</span>
-    <span class="nb">&lt;cfset</span> <span class="nv">variables.currentTotal</span> <span class="o">=</span> <span class="nv">variables.currentTotal</span> <span class="o">+</span> <span class="nv">arguments.amount</span> <span class="o">/</span><span class="nb">&gt;</span>
-<span class="nb">&lt;/cffunction&gt;</span>
-</code></pre>
-</div>
-
-
-<p>
-	Hints can also be useful if you plan to <a href="http://colddoc.riaforge.org/">generate documentation</a> for your components
-</p>
-
-<h2>Object oriented terminology</h2>
-
-<p>
-	In CFML these building blocks for objects are called <em>components</em>.
-</p>
-
-<p>
-	In other object oriented languages these building blocks are more commonly referred to as <em>classes</em>.
-</p>
-
-<h2>From here</h2>
-
-<p>
-	Take a look at <a href="simple-object.html">a simple example of an object</a>.
+	Keep in mind that with dynamic SQL such as this we are unable to use &lt;cfqueryparam&gt; 
+	so data type checking of any user input would be required.
 </p>
 
 

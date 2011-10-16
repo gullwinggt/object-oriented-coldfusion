@@ -101,7 +101,7 @@ header nav li:first-child a {
 }
 
 .main ul {
-	padding: 1em;
+	padding: 1em 1.5em;
 	list-style: disc;
 }
 
@@ -110,10 +110,10 @@ header nav li:first-child a {
 }
 
 .main ol {
-	padding: 1em;
+	padding: 1em 1.5em;
 }
 
-.main ul li {
+.main ol li {
 	padding-bottom: 0.3em;
 }
 
