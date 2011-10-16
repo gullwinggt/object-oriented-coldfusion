@@ -67,3 +67,99 @@ title: Dependency Injection
 </cfcomponent>
 {% endhighlight %}
 
+
+<p>
+	So to use our car object we may write some code such as:
+</p>
+
+
+{% highlight cfm %}
+<cfset car = createObject("component","Car").init()>
+
+<cfset car.applyPressureToAcceleratorPedal(5)>
+
+<cfoutput>
+    The car's speed is #car.getCurrentSpeed()#
+</cfoutput>
+{% endhighlight %}
+
+<p>
+	In this simple example we have only two objects that are required to work together; 
+	our car and our engine. The car on it's own does not know about the internal workings 
+	of an engine so it needs an engine object to perform &quot;engine&quot; type tasks. 
+	In other words the car object is <i>dependant</i> on the engine object and cannot function without it.
+</p>
+
+<p>
+	<img alt='Car depends on Engine UML diagram' src='assets/images/541BE17018D39FF213A58AEBA65DEB82.png'>
+</p>
+
+<p>
+	You will notice that when using this approach the Car needs to know how to create the Engine object. 
+	In this example the Engine object does not need any parameters passed to it's init() function, 
+	but if the Engine was changed so that it <i>did</i> need some initialisation parameters then we would 
+	also need to update our Car object accordingly.
+</p>
+
+<h2>Object coupling</h2>
+
+<p>
+	In object oriented design the more one object needs to know about another 
+	object the more &quot;tightly bound&quot; they are together. 
+	This increases the likelihood that if one object needs to be changed (e.g. the Engine) 
+	then the other object will also need to be changed (e.g. the Car). 
+</p>
+
+<p>
+	This measure of how tightly bound objects are to one another is called 
+	<a href="http://en.wikipedia.org/wiki/Coupling_(computer_science)">coupling</a>.
+</p>
+
+<p>
+	High coupling between two objects means the objects know a lot about each other. 
+	For example one object may call a function on another object that in turn returns a struct. 
+	The first object would need to know the details of each of the struct members to be able to use the returned value.
+</p>
+
+<p>
+	Low coupling means objects need to know very little about each other. 
+	For example one object may simply ask another object to perform a task and there is no return value. 
+	The first object has a lower coupling to the second object compared with the previous example that returned a struct.
+</p>
+
+<p>
+	Low coupling leads to more maintainable systems because it reduces the likelihood 
+	of a change in one object having an effect on other objects.
+</p>
+
+<h2>Reducing our coupling</h2>
+
+<p>
+	In our car example, the Car knows the details of how an Engine object is created. 
+	As mentioned above, this could lead to changes in the engine requiring changes to the car as well, 
+	which is a situation we would like to avoid.
+</p>
+
+<p>
+	Let's change our Car slightly and have the Engine provided to the Car in the init() 
+	function rather that having the Car create the Engine.   
+</p>
+
+
+{% highlight cfm %}
+<component name="Car" output="false">
+
+    <cfset variables.engine = 0>
+
+    <cffunction name="init" output="false">
+        <cfargument name="engine" required="true">
+        <cfset variables.engine = arguments.engine>
+        <cfreturn this>
+    </cffunction>
+ 
+    <!--- Other code here ---> 
+
+</cfcomponent>
+{% endhighlight %}
+
+
