@@ -5,7 +5,7 @@
 ********************************************/
 
 body {
-	font-size: 1.3em;
+	font-size: 1em;
 }
 
 /*******************************************
@@ -18,10 +18,9 @@ header {
 	padding: 1em;
 	text-align: center;
 
--moz-box-shadow: 0px 5px 30px #ccc;
--webkit-box-shadow: 0px 5px 30px #ccc;
-box-shadow: 0px 5px 30px #ccc;
-
+	-moz-box-shadow: 0px 5px 30px #ccc;
+	-webkit-box-shadow: 0px 5px 30px #ccc;
+	box-shadow: 0px 5px 30px #ccc;
 }
 
 header h1 a,
@@ -67,7 +66,8 @@ header nav li:first-child a {
 	max-width: 900px;
 	margin: 0 auto;
 	padding: 2em;
-
+	font-size: 1em;
+	line-height: 1.5em;
 }
 
 .main table {
@@ -82,20 +82,20 @@ header nav li:first-child a {
 
 .main h1 {
 	font-family: 'Alike', serif;
-	font-size: 2.4em;
+	font-size: 2em;
 	line-height: 1em;
 	padding-bottom: 0.5em;
 }
 
 .main h2 {
 	font-family: 'Alike', serif;
-	font-size: 1.8em;
+	font-size: 1.5em;
 	padding: 1.5em 0 0.5em 0;
 }
 
 .main h3 {
 	font-family: 'Alike', serif;
-	font-size: 1.2em;
+	font-size: 1em;
 	padding: 1.5em 0 0.5em 0;
 }
 
@@ -128,8 +128,8 @@ header nav li:first-child a {
 	border-top: 1px solid #ddd;
 	border-bottom: 1px solid #ddd;
 	padding: 1.5em 0;
-	font-size: 0.9em;
-	line-height: 1.5em;
+	font-size: 0.8em;
+	font-family: Consolas,'Andale Mono',Monaco,'Liberation Mono','Bitstream Vera Sans Mono','DejaVu Sans Mono',monospace;
 }
 
 /*******************************************
