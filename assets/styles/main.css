@@ -5,7 +5,7 @@
 ********************************************/
 
 body {
-	font-size: 1.5em;
+	font-size: 1.3em;
 }
 
 /*******************************************
@@ -83,13 +83,13 @@ header nav li:first-child a {
 .main h2 {
 	font-family: 'Alike', serif;
 	font-size: 1.6em;
-	padding: 2em 0 0.5em 0;
+	padding: 0.5em 0;
 }
 
 .main h3 {
 	font-family: 'Alike', serif;
 	font-size: 1.3em;
-	padding: 2em 0 0.5em 0;
+	padding: 0.5em;
 }
 
 .main a {
