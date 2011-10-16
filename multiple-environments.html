@@ -1,0 +1,856 @@
+---
+layout: base
+title: Managing Multiple Environment Configurations
+---
+
+<h1>Managing Multiple Environment Configurations</h1>
+
+<p>
+	When developing an application you will most likely have a number of environments 
+	that your code will need to run in. For example, you may have a &quot;development&quot; environment, 
+	a &quot;staging&quot; (or &quot;testing&quot;) environment and a live &quot;production&quot; environment. 
+	If each member of your team is developing an application on their own machine then they may each 
+	have their own specific environment requirements.
+</p>
+
+<p>
+	Let's take a look and how different environments may be handled using an object oriented approach.
+</p>
+
+<h2>Environment properties</h2>
+
+<p>
+	Your application will have a standard set of environment &quot;properties&quot; 
+	that differ within each environment. This may include datasource details, file paths and domain names. 
+	You may also have a set of configuration properties that should be the same across all of your environments, 
+	such as a company name or application constants.
+</p>
+
+<p>
+	Let's assume that for each of your environments you need the following variable properties defined:
+</p>
+
+<ul>
+<li>assetsPath</li>
+<li>documentsPath</li>
+<li>datasourceName</li>
+<li>datasourceUser</li>
+<li>datasourcePass</li>
+</ul>
+
+<p>
+	And assume that the common properties for your environments are:
+</p>
+
+<ul>
+<li>assetsUrl</li>
+<li>documentsUrl</li>
+<li>companyName</li>
+</ul>
+
+<p>
+	There are many ways of storing this information, 
+	but a common technique is to use an XML file. 
+	Let's create a single XML file that contains details for <i>all</i> of the environments. 
+</p>
+
+
+
+
+
+
+{% highlight xml %}
+<environments>
+
+    <common>
+        <assetsUrl>/assets</assetsUrl>
+        <documentsUrl>/documents</documentsUrl>
+        <companyName>Your Company</companyName>
+    </common>
+
+    <development>
+        <assetsPath>c:/data/workspace/yourcompany/assets</assetsPath>
+        <documentsPath>c:/data/workspace/yourcompany/files/documents</documentsPath>
+        <datasourceName>yourcompany_dev</datasourceName>
+        <datasourceUser>yourcompany</datasourceUser>
+        <datasourcePass>abc123</datasourcePass>
+    </development>
+
+    <staging>
+        <assetsPath>/staging/sites/yourcompany/assets</assetsPath>
+        <documentsPath>/staging/sites/yourcompany/files/documents</documentsPath>
+        <datasourceName>yourcompany_staging</datasourceName>
+        <datasourceUser>yourcompany</datasourceUser>
+        <datasourcePass>def456</datasourcePass>
+    </staging>
+
+    <production>
+        <assetsPath>/production/sites/yourcompany/assets</assetsPath>
+        <documentsPath>/production/sites/yourcompany/files/documents</documentsPath>
+        <datasourceName>yourcompany_live</datasourceName>
+        <datasourceUser>yourcompany</datasourceUser>
+        <datasourcePass>ghi789</datasourcePass>
+    </production>
+
+</environments>
+{% endhighlight %}
+
+
+
+
+
+
+
+
+
+<p>
+	You'll notice a section called &quot;common&quot; which will be used to hold 
+	properties that are common to all environments. Each other environment gets its own 
+	section in the file. You can add as many different environments as you need.
+</p>
+
+<p>
+	There are many different ways of designing your XML (see references below), 
+	but this approach nicely lends itself to direct conversion to CFML struct, 
+	and can also supports nested values if required.
+</p>
+
+<h2>What objects do we need?</h2>
+
+<p>
+	When planning objects you are looking to identify any things that may need 
+	to change over time and separate those things.
+</p>
+
+<p>
+	Firstly, the storage format of our environment data may change. 
+	The format of the XML file may change, or we may choose to move the environment 
+	information from an XML file into a component. 
+</p>
+
+<p>
+	We will also need a way of identifying the environment we are currently running in. 
+	For example, initially we may start with using domain names to identify our environment. 
+	But if our application moves to a more complex environment with multiple ColdFusion 
+	instances in a cluster then we may need to use another technique such as storing the 
+	current environment name in a file on each server instance.
+</p>
+
+<p>
+	So at the very least we will create two objects:
+</p>
+
+<p>
+	<b>EnvronmentIdentifier</b>, which tells us the environment we are running in. 
+	It will hide (encapsulate) the environment identification technique, whether it be by 
+	domain name, file or other means.
+</p>
+
+<p>
+	<b>Environment</b>, which provides us with the properties relevant for the current environment. 
+	It will hide (encapsulate) how the environment properties are stored. 
+</p>
+
+<h2>Designing an Environment object</h2>
+
+<p>
+	Let's start by creating an Environment object:
+</p>
+
+<p>
+	<img alt='Environment UML diagram' src='assets/images/C4A03C83E326027D6654E518DEBCA87C.png'>
+</p>
+
+<p>
+	Our environment object will know about all of the possible environments, 
+	so the use() function will tell it which environment values it should use. 
+	The property() function will just return the value of that property for the currently selected environment.
+</p>
+
+<p>
+	In this example, we are using an XML file for all of the environment details, 
+	so we will need to initialise our object with the file path of the environment XML file. 
+	Let's take a look at how we may use our environment object:
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<!--- Create the environment object ---> 
+<cfset envPath = expandPath("/config/environments.xml.cfm")>
+<cfset environment = createObject("component","com.util.Environment").init( envPath )>
+
+<!--- Tell it to use the "development" environment --->
+<cfset environment.use("development")>
+
+<!--- Display one of the environment properties --->
+<cfoutput>
+    #environment.property("datasourceName")#
+</cfoutput>
+{% endhighlight %}
+
+
+
+
+
+<h2>Implementing an Environment object</h2>
+
+<p>
+	Let's take a look at how we might implement our environment object.
+</p>
+
+<p>
+	First, we need to read the XML file and convert the contained data 
+	to a format that's easy to use. The format described above converts 
+	nicely into a struct using an <a href="http://xml2struct.riaforge.org/">XML to Struct</a> utility.
+</p>
+
+<p>
+	So to read and convert our XML file to a struct we have:
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cffunction name="environmentXMLFileToStruct" output="false" access="private">
+    <cfargument name="environmentFilePath" required="true">
+    <cfset var xmlString = 0>
+    <cfset var xmlUtil = 0>
+    <cffile action="read" file="#arguments.environmentFilePath#" variable="xmlString">
+    <cfset xmlUtil = createObject("component","com.util.xml2struct")>
+    <cfreturn xmlUtil.convertXmlToStruct(xmlString,structNew())>
+</cffunction>
+{% endhighlight %}
+
+
+
+
+
+<p>
+	This returns a struct that has the identical structure to the XML file above:
+</p>
+
+<p>
+	<img src="assets/images/environment-struct-dump.gif" alt="Environment Struct Dump">
+</p>
+
+<p>
+	We will convert the XML file to a struct when we initialise our Environment.cfc object:
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cfset variables.instance = {}>
+<cfset variables.instance.environments = 0>
+
+<cffunction name="init" output="false">
+    <cfargument name="environmentFilePath" required="true">
+    <cfset var environments = environmentXMLFileToStruct(arguments.environmentFilePath)>
+    <cfset variables.instance.environments = environments>
+    <cfreturn this>
+</cffunction>
+{% endhighlight %}
+
+
+
+
+
+<p>
+	Implementing the use() function is quite simple because the data 
+	for each environment is stored in it's own &quot;sub&quot; struct.
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cfset variables.instance.environment = 0>
+
+<cffunction name="use" output="false">
+    <cfargument name="environmentName" required="true">
+    <cfset variables.instance.environment = variables.instance.environments[arguments.environmentName]>
+</cffunction>
+{% endhighlight %}
+
+
+
+
+
+<p>
+	Lastly, getting a property is also quite easy to retrieve from the currently selected environment:
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cffunction name="property" output="false">
+    <cfargument name="name" required="true">
+    <cfreturn variables.instance.environment[arguments.name]>
+</cffunction>
+{% endhighlight %}
+
+
+
+
+
+<p>
+	Lastly, we just need a little special handling of the &quot;common&quot; environment properties. 
+	These properties need to be added to all of the other environments, 
+	so we add a little extra code to the init() function:
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cffunction  name="init" output="false">
+    <cfargument name="environmentFilePath" required="true">
+    <cfset var envName = 0>
+    <cfset var environments = environmentXMLFileToStruct(arguments.environmentFilePath)>
+
+    <!--- Add the common properties to each of the other environments --->
+    <cfif structKeyExists(environments,"common")>
+        <cfloop item="envName" collection="#environments#">
+            <cfif envName neq "common">
+                <cfset structAppend(environments[envName],environments["common"],true)>
+            </cfif>
+        </cfloop>
+    </cfif>
+	
+    <cfset variables.instance.environments = environments>
+    <cfreturn this>
+</cffunction>
+{% endhighlight %}
+
+
+
+
+<p>
+	This code has omitted a few details such as error handling, 
+	but the complete code is available further below.
+</p>
+
+
+<h2>Identifying our current environment</h2>
+
+<p>
+	In each location where your code will execute there will need to be something 
+	present than can be used to decide what environment you are in. 
+	Some approaches that may be used include inspecting the domain name the code is running from, 
+	or perhaps inspecting the contents of a file that is different in each location. 
+</p>
+
+<h3>Identifying the environment using a domain name</h3>
+
+<p>
+	Let's first consider that you are using the domain name to determine your environment. 
+	Suppose you have three environments; development, staging and production that run on the following domains:
+</p>
+
+<ul>
+<li>yourapp.localhost - development</li>
+<li>staging.yourapp.com - staging</li>
+<li>www.yourapp.com - production</li>
+</ul>
+
+<p>
+	Let's create an object that identifies the environment you are running in. 
+	This will be called an &quot;environment identifier&quot; and provides only 
+	one function which returns a string representing the current environment.
+</p>
+
+<p>
+	<img alt='Domain Environment Identifier UML diagram' src='assets/images/88A8475BFC66B48CC27628E8ACBC4117.png'>
+</p>
+
+<p>
+	When our DomainEnvironmentIdentifier is created we need to pass in the current &quot;domain name&quot;. 
+	This is obtained from the cgi.SERVER_NAME variable.
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cfcomponent name="DomainEnvironmentIdentifier" output="false">
+
+    <cfset variables.domainName = "">
+
+    <cfset variables.map = {}>
+    <cfset variables.map["yourapp.localhost"] = "development">
+    <cfset variables.map["staging.yourapp.com"] = "staging">
+    <cfset variables.map["www.yourapp.com"] = "production">
+
+    <!--- INITIALISATION --->
+
+     <cffunction name="init" output="false">
+        <cfargument name="domainName" required="true">
+        <cfset variables.domainName = arguments.domainName>
+        <cfreturn this>
+    </cffunction>
+
+    <!--- PUBLIC FUNCTIONS --->
+
+    <cffunction name="currentEnvironment" output="false">
+        <cfif not structKeyExists(variables.map,variables.domainName)>
+            <cfthrow message="Cannot determine the environment for domain name '#variables.domainName#'">
+        </cfif>
+        <cfreturn variables.map[variables.domainName]>
+    </cffunction>
+
+</cfcomponent>
+{% endhighlight %}
+
+
+
+
+
+<p>
+	This is quite a simple component with the single task of determining the environment 
+	based on the domain name. The object may be used as follows:
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cfset environmentIdentifier = createObject("component","DomainEnvironmentIdentifier").init(cgi.SERVER_NAME)>
+<cfset environment = environmentIdentifier.currentEnvironent()>
+{% endhighlight %}
+
+
+
+
+
+<p>
+	You'll notice that the mappings for the domain names are stored within the object. 
+	For a larger application this mapping information could perhaps be moved to a 
+	separate file which is read in by the environment identifier. 
+</p>
+
+
+
+<h3>Identifying the environment from a file</h3>
+
+<p>
+	In more complicated environments, a domain name alone may not be enough to identify an environment. 
+	For example, suppose you have two clustered servers running your live production code, 
+	and some details are a little different on each server. 
+	The domain to access them will be the same, but the environment details may be slightly different.
+</p>
+
+<p>
+	In cases such as these we can place a file on each server 
+	that contains the name of the current environment.
+</p>
+
+<p>
+	CFML supports a file format called an &quot;ini&quot; file which is essentially made up 
+	of &quot;section names&quot; in square brackets, followed by name=value pairs. 
+	We can use this as a file format for our environment file:
+</p>
+
+
+
+
+
+
+{% highlight text %}
+[environment]
+environment=production
+{% endhighlight %}
+
+
+
+
+
+
+<p>
+	So this shows a section called &quot;environment&quot; that contains an item named &quot;environment&quot; 
+	with the value &quot;production&quot;. These types of files are called INI files and conventionally have a 
+	.ini file extension.
+</p>
+
+<p>
+	We can use the CFML function <b>getProfileString(filePath,section,item)</b> to read this value.
+</p>
+
+<p>
+	Let's create a FileEnvironmentIdentifier object that uses this file to identify the current environment.
+</p>
+
+<p>
+	<img alt='File Environment Identifier UML Diagram' alt='assets/images/FD18B02DA533CE5082827835544C6878.png'>
+</p>
+
+<p>
+	When our FileEnvironmentIdentifier is created we need to pass in the path to the environment file.
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cfcomponent name="FileEnvironmentIdentifier" output="false">
+
+    <!--- PRIVATE VARIABLES --->    
+
+    <cfset variables.environment = "">
+
+    <!--- INITIALISATION --->
+
+     <cffunction name="init" output="false">
+        <cfargument name="environmentFilePath" required="true">
+        <cfset variables.environment = getProfileString(arguments.environmentFilePath, "environment", "environment")>
+        <cfreturn this>
+    </cffunction>
+    
+    <!--- PUBLIC VARIABLES --->
+
+    <cffunction name="currentEnvironment" output="false">
+        <cfreturn variables.environment>
+    </cffunction>
+
+</cfcomponent>
+{% endhighlight %}
+
+
+
+
+
+<p>
+	Using our component is very similar to the DomainEnvironmentIdentifier:
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cfset envPath = expandPath("/config/environment.ini.cfm")>
+<cfset environmentIdentifier = createObject("component","FileEnvironmentIdentifier").init( envPath )>
+<cfset environment = environmentIdentifier.currentEnvironent()>
+{% endhighlight %}
+
+
+
+
+
+<h2>Implementing an Environment object in your application</h2>
+
+<p>
+	Your environment settings are something that typically only need to be created once in an application, 
+	so it's an ideal candidate for creating on application startup. 
+	Let's write an example of how the environment may be created on application startup within an Application.cfc file. 
+</p>
+
+<p>
+	Using domain name environment identifier:
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cffunction name="onApplicationStartup" output="false">
+    <cfset var identifier = createObject("component","DomainEnvironmentIdentifier").init( cgi.SERVER_NAME )>
+    <cfset var environment = createObject("component","").init( expandPath("/config/environment.xml.cfm") )>
+    <cfset environment.use( identifier.currentEnvironment() )>
+    <cfset application.environment = environment>
+</cffunction> 
+{% endhighlight %}
+
+
+
+
+
+<p>
+	Using file environment identifier:
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cffunction name="onApplicationStartup" output="false">
+    <cfset var envPath = expandPath("/config/environment.ini.cfm")>
+    <cfset var identifier = createObject("component","FileEnvironmentIdentifier").init( envPath )>
+    <cfset var environment = createObject("component","Environment").init( expandPath("/config/environment.xml.cfm") )>
+    <cfset environment.use( identifier.currentEnvironment() )>
+    <cfset application.environment = environment>
+</cffunction> 
+{% endhighlight %}
+
+
+
+
+
+<h2>Separation of environment properties from environment identification</h2>
+
+<p>
+	In this design of environment objects we have separated out the environment properties 
+	from the environment identification. This means that either one is able to freely change 
+	with little to no impact on the other.
+</p>
+
+<p>
+	Further to this, the environment properties and environment identification code only exists 
+	in one place making this part of the application easy to change.
+</p>
+
+
+<h2>Securing your configuration files</h2>
+
+<p>
+	In the examples above we made use of two configuration files:
+</p>
+
+<ul>
+<li>environments.xml.cfm</li>
+<li>environments.ini.cfm</li>
+</ul>
+
+<p>
+	You'll notice that these files both have a .cfm file extension. 
+	This is used to help ensure that the files may not be downloaded. 
+	This type of file security implemented as follows:
+</p>
+
+<p>
+	1. Place the configuration files into a subdirectory, such as /config.
+</p>
+
+<p>
+	2. Create an Application.cfc in the same directory that simply contains a &lt;cfabort&gt; tag.
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cfcomponent>
+    <cfabort>
+</cfcomponent>  
+{% endhighlight %}
+
+
+
+
+
+<p>
+	Any request to a .cfm file within this folder will immediately abort and prevent the file from being downloaded.
+</p>
+
+
+
+
+<h2>Environment object code</h2>
+
+<p>
+	Complete code for <b>Environment.cfc</b> component.
+</p>
+
+<p>
+	This is a full version of the component that contains a few additional features:
+</p>
+
+<ul>
+	<li>Allows you to specify the initial environment value when the object is created. </li>
+	<li>Extra function <b>name()</b> that returns the name of the currently active environment.</li>
+	<li>
+		Extra function <b>properties()</b> that returns a complete struct of all current properties. 
+		It's worth noting that this should only be used for debugging and is not recommended for passing into functions directly.
+	</li>
+</ul>
+
+<p>
+	<img alt='Environment UML diagram' src='assets/images/FA2DACB448566B4A84C7E7C8BCD58438.png'>
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<cfcomponent name="Environment" output="false">
+
+    <!--- PRIVATE VARIABLES --->
+
+    <cfset variables.instance = {}>
+    <cfset variables.instance.environments = 0>
+    <cfset variables.instance.environment = {}>
+    <cfset variables.instance.environmentName = "">
+    
+    <!--- INITIALISATION --->
+
+     <cffunction name="init" output="false">
+        <cfargument name="environmentFilePath" required="true">
+        <cfargument name="environment" required="false">
+        <cfset var envName = 0>
+        <cfset var environments = 0>
+        
+        <cfset environments = environmentXMLFileToStruct(arguments.environmentFilePath)>
+        
+        <!--- Add the common properties to all of the environments --->
+        <cfif structKeyExists(environments,"common")>
+            <cfloop item="envName" collection="#environments#">
+                <cfif envName neq "common">
+                    <cfset structAppend(environments[envName],environments["common"],true)>
+                </cfif>
+            </cfloop>
+        </cfif>
+        
+        <cfset variables.instance.environments = environments>
+
+        <!--- Set the initial environment, if provided --->
+        <cfif structKeyExists(arguments,environment)>
+            <cfset use(arguments.environment)>
+        </cfif>
+
+        <cfreturn this>
+    </cffunction>
+    
+    <!--- PUBLIC FUNCTIONS --->
+
+     <cffunction name="use" output="false">
+        <cfargument name="environmentName" required="true">
+        <cfif not structKeyExists(variables.instance.environments,arguments.environmentName)>
+            <cfthrow message="Invalid environment name '#arguments.environmentName#'">
+        </cfif>
+        <cfset variables.instance.environment = variables.instance.environments[arguments.environmentName]>
+        <cfset variables.instance.environmentName = arguments.environmentName>
+    </cffunction>
+
+    <cffunction name="name" output="false">
+        <cfreturn variables.instance.environmentName>
+    </cffunction>
+
+    <cffunction name="properties" output="false">
+        <cfreturn variables.instance.environment>
+    </cffunction>
+
+    <cffunction name="property" output="false">
+        <cfargument name="name" required="true">
+        <cfif not structKeyExists(variables.instance.environment,arguments.name)>
+            <cfthrow message="Environment property '#arguments.name#' not found">
+        </cfif>
+        <cfreturn variables.instance.environment[arguments.name]>
+    </cffunction>
+
+    <!--- PRIVATE FUNCTIONS --->
+
+    <cffunction name="environmentXMLFileToStruct" output="false" access="private">
+        <cfargument name="environmentFilePath" required="true">
+        <cfset var xmlString = 0>
+        <cfset var xmlUtil = 0>
+        <cffile action="read" file="#arguments.environmentFilePath#" variable="xmlString">
+        <cfset xmlUtil = createObject("component","com.util.xml2struct")>
+        <cfreturn xmlUtil.convertXmlToStruct(xmlString,structNew())>
+    </cffunction>
+
+</cfcomponent>
+{% endhighlight %}
+
+
+
+
+
+
+<h2>Integrating an Environment object with ColdSpring (Advanced)</h2>
+
+<p>
+	If you are making use of ColdSpring to manage your objects then 
+	it is useful to have your environment object available as a ColdSpring bean.
+</p>
+
+<p>
+	ColdSpring allows &quot;parameters&quot; to be provided when its &quot;bean&quot; 
+	XML file is loaded. This allows us to provide it with:
+</p>
+
+<ol>
+<li>the environment configuration file path, and</li>
+<li>the current environment, which is found via our Environment Identifier object.</li>
+</ol>
+
+
+
+
+
+
+{% highlight cfm %}
+<!--- Create our  environment identifier, in this case a Domain based identifier --->
+<cfset environmentIdentifier = createObject("component","DomainEnvironmentIdentifier").init(cgi.SERVER_NAME)>
+
+<!--- Set the two properties that will be provided as parameters to ColdSpring ---> 
+<cfset properties = {}>
+<cfset properties.environmentFilePath = expandPath("/config/environments.xml.cfm")>
+<cfset properties.environment = environmentIdentifier.currentEnvironment()>
+
+<!--- Create the ColdSpring factory, providing our custom properties ---> 
+<cfset beanFactory = createObject("component", "coldspring.beans.DefaultXmlBeanFactory").init(structNew(),properties)>
+<cfset beanFactory.loadBeans(expandPath("/config/coldspring.xml.cfm"))>
+{% endhighlight %}
+
+
+
+
+
+<p>
+	Our Environment object would be defined within ColdSpring as follows. 
+	Notice the use of the two parameter values ${environmentFilePath} and ${environment} 
+	which are provided in the &quot;properties&quot; struct when the ColdSpring factory is initialised.
+</p>
+
+
+
+
+
+
+{% highlight cfm %}
+<bean id="environment" class="com.util.environment.Environment" singleton="true">
+    <constructor-arg name="environmentFilePath">
+        <value>${environmentFilePath}</value>
+    </constructor-arg>
+    <constructor-arg name="environment">
+        <value>${environment}</value>
+    </constructor-arg>
+</bean>
+{% endhighlight %}
+
+
+
+
+
+
