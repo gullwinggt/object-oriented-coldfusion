@@ -107,7 +107,7 @@ header nav li:first-child a {
 .main .highlight {
 	border-top: 1px solid #ddd;
 	border-bottom: 1px solid #ddd;
-	padding: 1.5em;
+	padding: 1.5em 0;
 	font-size: 0.9em;
 	line-height: 1.5em;
 }
