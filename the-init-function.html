@@ -1,0 +1,133 @@
+---
+layout: base
+title: The Init() Function
+---
+
+<h1>The Init() Function</h1>
+
+<p>
+	When using objects is very useful to be able to &quot;initalise&quot; them 
+	into a known state before we start using them. 
+	This is called <a href="object-initialisation.html">object initalisation</a> 
+	which is an important topic that deserves special attention, but we will introduce it here. 
+</p>
+
+<p>
+	The convention for initialising ColdFusion components is to use a function named init():
+</p>
+
+{% highlight cfm %}
+<cffunction name="init" output="false">
+    <cfreturn this>
+</cffunction>
+{% endhighlight %}
+
+<p>
+	This example is the most basic form of the init() function.
+</p>
+
+<p>
+	The &lt;cfreturn this&gt; is very important and if not included will cause errors in your code.
+</p>
+
+<p>
+	The init() function frequently takes arguments needed to initialise your object. 
+</p>
+
+<p>
+	In the previous section we introduced a <a href="simple-object.html">ThresholdCounter</a> 
+	object which contained a hardcoded value of 100 for the threshold level. 
+</p>
+
+{% highlight cfm %}
+<cfcomponent output="false">
+
+    <cfset variables.threshold = 100> <!--- HARDCODED THRESHOLD --->
+    <cfset variables.currentTotal = 0>
+
+    <cffunction name="addAmount" output="false" returntype="void">
+        <cfargument name="amount" type="numeric" required="true">
+        <cfset variables.currentTotal = variables.currentTotal + arguments.amount>
+    </cffunction>
+
+    <cffunction name="thresholdHasBeenReached" output="false" returntype="boolean">
+        <cfset var thresholdReached = variables.currentTotal ge variables.threshold>
+        <cfreturn thresholdReached>
+    </cffunction>
+
+</cfcomponent>
+{% endhighlight %}
+
+<p>
+	This is fine but it would be much nicer if we could set this threshold to a particular 
+	value when we create the object, then we could have multiple ThresholdCounter objects 
+	each with different thresholds if we needed.
+</p>
+
+<p>
+	Let's add an init() function that can accept the threshold as an argument.
+</p>
+
+{% highlight cfm %}
+<cfcomponent output="false">
+
+    <cfset variables.threshold = 0>
+    <cfset variables.currentTotal = 0>
+
+    <cffunction name="init" output="false">
+        <cfargument name="threshold" required="true">
+        <cfset variables.threshold = arguments.threshold>
+        <cfreturn this>
+    </cffunction>
+
+    <cffunction name="addAmount" output="false" returntype="void">
+        <cfargument name="amount" type="numeric" required="true">
+        <cfset variables.currentTotal = variables.currentTotal + arguments.amount>
+    </cffunction>
+
+    <cffunction name="thresholdHasBeenReached" output="false" returntype="boolean">
+        <cfset var thresholdReached = variables.currentTotal ge variables.threshold>
+        <cfreturn thresholdReached>
+    </cffunction>
+
+</cfcomponent>
+{% endhighlight %}
+
+<p>
+	Now when we create the object we need to also call the init() function to properly initialise our object.
+</p>
+
+<p>
+	The preferred technique for creating and initalising objects is to create the object and initialise in one step: 
+</p>
+
+<cfset counter = createObject("component","ThresholdCounter").init(100)>
+
+<h2>Init() is not a special function name</h2>
+
+<p>
+	It is important to note that init() is not a special reserved function name for ColdFusion components. 
+	It is just a convention than has been widely adopted by the ColdFusion community. 
+	There are some other reasons to use init() 
+	which relate to <a href="http://livedocs.adobe.com/coldfusion/8/htmldocs/help.html?content=Java_7.html#1177942">using Java objects within CFML</a>.
+</p>
+
+<h2>Always use an init() function</h2>
+
+<p>
+	The init() function should be included in every component you create, 
+	even if it does nothing, and it must always be called when creating your objects.
+</p>
+
+<p>
+	When you first create a new component the init() function may have no apparent need, 
+	but as your application grows you may find that your component changes and you need 
+	to initialise your objects into a particular state.
+</p>
+
+<h2>From Here</h2>
+
+<p>
+	<a href="creating-objects.html">Creating Objects</a>
+</p>
+
