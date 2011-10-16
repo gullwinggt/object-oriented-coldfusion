@@ -1,8 +1,8 @@
-#main table {
+.main table {
 	border-collapse: collapse;
 }
 
-#main table td {
+.main table td {
 	border: 1px solid #000;
 }
 
