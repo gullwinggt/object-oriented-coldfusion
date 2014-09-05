@@ -603,10 +603,39 @@ title: Writing Your Own Object Factory
 	that do all of this work for you, and much more.
 </p>
 
+<h3>WireBox</h3>
+
+<p>
+	WireBox started out as part of the ColdBox MVC Platform but eventually became a standalone library.
+	It allows for convention-based object creation via annoations and specifiying dependencies as properties of the component.
+	CFCs are assumed to be a transient unless you hadd an annotation like <strong>singleton</strong> or <strong>scope="session"</strong>.
+	In addition to CFCs it can be used to create Java objects, web services or RSS feeds.  AOP can also be enabled via a listener.
+</p>
+
+<p>
+	<a href="https://github.com/ColdBox/cbox-refcards/raw/master/WireBox/WireBox-Refcard.pdf">PDF Ref Card</a>
+</p>
+
+
+<h3>DI/1</h3>
+
+<p>
+	DI/1 - Inject One - is a very lightweight, convention over configuration, dependency injection
+	(inversion of control) framework for ColdFusion / CFML.
+	Initialize it with a comma-separated list of folders to scan for CFCs.
+	CFCs found in a folder called beans are assumed to be transient. All other CFCs are assumed to be singletons.
+	AOP can be enabled via AOP/1.
+</p>
+
+<p>
+	<a href="https://github.com/framework-one/di1/wiki">https://github.com/framework-one/di1/wiki</a>
+</p>
+
+
 <h3>Coldspring</h3>
 
 <p>
-	Coldspring is the defacto dependency injection framework for CFML. 
+	Coldspring is one of the first dependency injection frameworks for CFML. 
 	It uses a simple XML file to describe your objects and how they are related to each other. 
 	ColdSpring provides some more advanced features beyond dependency injection and is ideally used for singleton objects but not transients. 
 </p>
